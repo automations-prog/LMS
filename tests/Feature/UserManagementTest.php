@@ -20,14 +20,17 @@ test('super admin can create an admin', function () {
     $superAdmin = User::factory()->create();
     $superAdmin->assignRole('super-admin');
 
+    $referer = route('users.index', ['page' => 2]);
+
     $this->actingAs($superAdmin)
+        ->from($referer)
         ->post(route('users.store'), [
             'name' => 'New Admin',
             'email' => 'new-admin@example.com',
             'password' => 'Password123!',
             'role' => 'admin',
         ])
-        ->assertRedirect(route('users.index'));
+        ->assertRedirect($referer);
 
     $this->assertTrue(User::whereEmail('new-admin@example.com')->first()?->hasRole('admin'));
 });
@@ -36,14 +39,17 @@ test('admin can create an agent but not an admin', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
+    $referer = route('users.index', ['page' => 2]);
+
     $this->actingAs($admin)
+        ->from($referer)
         ->post(route('users.store'), [
             'name' => 'New Agent',
             'email' => 'new-agent@example.com',
             'password' => 'Password123!',
             'role' => 'agent',
         ])
-        ->assertRedirect(route('users.index'));
+        ->assertRedirect($referer);
 
     $this->assertTrue(User::whereEmail('new-agent@example.com')->first()?->hasRole('agent'));
 
@@ -101,4 +107,23 @@ test('agent cannot access user management', function () {
     $this->actingAs($agent)
         ->get(route('users.index'))
         ->assertForbidden();
+});
+
+test('pagination links preserve empty-string filters (regression: ConvertEmptyStringsToNull vs withQueryString)', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->assignRole('super-admin');
+    User::factory(15)->create()->each(fn ($u) => $u->assignRole('agent'));
+
+    $response = $this->actingAs($superAdmin)
+        ->get(route('users.index', ['per_page' => 10, 'role' => '', 'search' => '']));
+
+    $response->assertInertia(function ($page) {
+        $links = collect($page->toArray()['props']['users']['links']);
+        $nextLink = $links->firstWhere('label', 'Next &raquo;');
+
+        expect($nextLink['url'])
+            ->toContain('role=')
+            ->toContain('search=')
+            ->toContain('page=2');
+    });
 });

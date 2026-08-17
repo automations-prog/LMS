@@ -18,7 +18,10 @@ class EnsureAccountIsActive
     {
         $user = $request->user();
 
-        if ($user && ! $user->is_active) {
+        // Strictly `=== false`, not `! $user->is_active` — a User instance that
+        // never loaded/selected the column (e.g. one set directly on the guard
+        // rather than freshly queried) would otherwise be misread as suspended.
+        if ($user && $user->is_active === false) {
             Auth::guard('web')->logout();
 
             $request->session()->invalidate();

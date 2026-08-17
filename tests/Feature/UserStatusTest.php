@@ -45,15 +45,19 @@ test('admin can suspend and reactivate an agent', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');
 
+    $referer = route('users.index', ['page' => 2]);
+
     $this->actingAs($admin)
+        ->from($referer)
         ->patch(route('users.update-status', $agent))
-        ->assertRedirect(route('users.index'));
+        ->assertRedirect($referer);
 
     expect($agent->fresh()->is_active)->toBeFalse();
 
     $this->actingAs($admin)
+        ->from($referer)
         ->patch(route('users.update-status', $agent))
-        ->assertRedirect(route('users.index'));
+        ->assertRedirect($referer);
 
     expect($agent->fresh()->is_active)->toBeTrue();
 });

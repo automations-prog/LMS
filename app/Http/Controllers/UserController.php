@@ -21,8 +21,8 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', User::class);
 
-        $perPage = (int) $request->integer('per_page', 15);
-        $perPage = in_array($perPage, [10, 25, 50], true) ? $perPage : 15;
+        $perPage = (int) $request->integer('per_page', 10);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 10;
 
         $search = $request->string('search')->trim()->toString();
         $role = $request->string('role')->trim()->toString();
@@ -37,7 +37,17 @@ class UserController extends Controller
             ->when($role !== '', fn ($query) => $query->role($role))
             ->orderBy('name')
             ->paginate($perPage)
-            ->withQueryString();
+            // Not ->withQueryString(): Laravel's ConvertEmptyStringsToNull
+            // middleware rewrites empty-string query params (search=, role=)
+            // to null before we ever see them, and http_build_query() silently
+            // drops null values — withQueryString() would read that already-
+            // nulled request bag and lose these filters from every pagination
+            // link. Appending our own sanitized (never-null) values instead.
+            ->appends([
+                'search' => $search,
+                'role' => $role,
+                'per_page' => $perPage,
+            ]);
 
         return Inertia::render('users/index', [
             'users' => $users,
@@ -74,7 +84,7 @@ class UserController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
 
-        return to_route('users.index');
+        return back();
     }
 
     /**
@@ -99,7 +109,7 @@ class UserController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User updated.')]);
 
-        return to_route('users.index');
+        return back();
     }
 
     /**
@@ -122,7 +132,7 @@ class UserController extends Controller
                 : __(':name has been suspended.', ['name' => $user->name]),
         ]);
 
-        return to_route('users.index');
+        return back();
     }
 
     /**
@@ -139,13 +149,13 @@ class UserController extends Controller
         if ($user->hasRole('super-admin') && User::role('super-admin')->count() <= 1) {
             Inertia::flash('toast', ['type' => 'error', 'message' => __('You cannot delete the last super admin.')]);
 
-            return to_route('users.index');
+            return back();
         }
 
         $user->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User deleted.')]);
 
-        return to_route('users.index');
+        return back();
     }
 }

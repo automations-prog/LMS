@@ -52,7 +52,7 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if (! $user->is_active) {
+            if ($user->is_active === false) {
                 throw ValidationException::withMessages([
                     Fortify::username() => __('Your account has been suspended. Please contact an administrator.'),
                 ]);

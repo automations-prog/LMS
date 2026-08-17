@@ -27,6 +27,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.delete',
             'users.manage-admins',
             'users.impersonate',
+            'courses.view',
+            'courses.create',
+            'courses.update',
+            'courses.delete',
+            'courses.browse',
         ];
 
         foreach ($permissions as $permission) {
@@ -43,9 +48,16 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.update',
             'users.delete',
             'users.impersonate',
+            'courses.view',
+            'courses.create',
+            'courses.update',
+            'courses.delete',
         ]);
 
-        Role::findOrCreate('agent');
+        $agent = Role::findOrCreate('agent');
+        $agent->syncPermissions([
+            'courses.browse',
+        ]);
 
         $user = User::firstOrCreate(
             ['email' => 'superadmin@example.com'],

@@ -50,7 +50,7 @@ const ROLE_BADGE_CLASSES: Record<string, string> = {
 
 const ALL_ROLES = ['agent', 'admin', 'super-admin'];
 
-const PER_PAGE_OPTIONS = [10, 25, 50];
+const PER_PAGE_OPTIONS = [10, 15, 25, 50];
 
 type PaginationLink = {
     url: string | null;
