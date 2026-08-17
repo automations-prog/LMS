@@ -26,6 +26,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.update',
             'users.delete',
             'users.manage-admins',
+            'users.impersonate',
         ];
 
         foreach ($permissions as $permission) {
@@ -41,6 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.create',
             'users.update',
             'users.delete',
+            'users.impersonate',
         ]);
 
         Role::findOrCreate('agent');

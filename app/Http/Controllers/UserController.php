@@ -21,26 +21,38 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', User::class);
 
-        $users = User::with('roles')
+        $perPage = (int) $request->integer('per_page', 15);
+        $perPage = in_array($perPage, [10, 25, 50], true) ? $perPage : 15;
+
+        $search = $request->string('search')->trim()->toString();
+        $role = $request->string('role')->trim()->toString();
+
+        $users = User::query()
+            ->with('roles')
+            ->when($search !== '', fn ($query) => $query->where(
+                fn ($query) => $query
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%"),
+            ))
+            ->when($role !== '', fn ($query) => $query->role($role))
             ->orderBy('name')
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
 
         return Inertia::render('users/index', [
             'users' => $users,
             'assignableRoles' => UserPolicy::assignableRoles($request->user()),
-        ]);
-    }
-
-    /**
-     * Show the form for creating a new user.
-     */
-    public function create(Request $request): Response
-    {
-        Gate::authorize('create', User::class);
-
-        return Inertia::render('users/create', [
-            'assignableRoles' => UserPolicy::assignableRoles($request->user()),
+            'filters' => [
+                'search' => $search,
+                'role' => $role,
+                'per_page' => $perPage,
+            ],
+            'counts' => [
+                'total' => User::count(),
+                'agent' => User::role('agent')->count(),
+                'admin' => User::role('admin')->count(),
+                'super-admin' => User::role('super-admin')->count(),
+            ],
         ]);
     }
 
@@ -63,19 +75,6 @@ class UserController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
 
         return to_route('users.index');
-    }
-
-    /**
-     * Show the form for editing the given user.
-     */
-    public function edit(Request $request, User $user): Response
-    {
-        Gate::authorize('update', $user);
-
-        return Inertia::render('users/edit', [
-            'user' => $user->load('roles'),
-            'assignableRoles' => UserPolicy::assignableRoles($request->user()),
-        ]);
     }
 
     /**
@@ -104,11 +103,38 @@ class UserController extends Controller
     }
 
     /**
+     * Toggle the given user's active/suspended status.
+     */
+    public function updateStatus(Request $request, User $user): RedirectResponse
+    {
+        Gate::authorize('update', $user);
+
+        // Gate::before grants super-admins every ability, which would bypass
+        // a self-suspend guard placed in the policy — enforce it here instead.
+        abort_if($request->user()->id === $user->id, 403, __('You cannot change your own status.'));
+
+        $user->update(['is_active' => ! $user->is_active]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $user->is_active
+                ? __(':name has been activated.', ['name' => $user->name])
+                : __(':name has been suspended.', ['name' => $user->name]),
+        ]);
+
+        return to_route('users.index');
+    }
+
+    /**
      * Remove the given user.
      */
     public function destroy(Request $request, User $user): RedirectResponse
     {
         Gate::authorize('delete', $user);
+
+        // Gate::before grants super-admins every ability, which would bypass
+        // the policy's self-delete guard for them — enforce it here instead.
+        abort_if($request->user()->id === $user->id, 403, __('You cannot delete your own account.'));
 
         if ($user->hasRole('super-admin') && User::role('super-admin')->count() <= 1) {
             Inertia::flash('toast', ['type' => 'error', 'message' => __('You cannot delete the last super admin.')]);

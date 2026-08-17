@@ -57,6 +57,16 @@ class UserPolicy
     }
 
     /**
+     * Determine whether the user can impersonate the given user.
+     */
+    public function impersonate(User $user, User $target): bool
+    {
+        return $user->id !== $target->id
+            && $user->can('users.impersonate')
+            && $this->canManageTarget($user, $target);
+    }
+
+    /**
      * Determine whether the actor is allowed to touch the target account,
      * enforcing the role-hierarchy rule: admin-level accounts can only be
      * managed by someone with the users.manage-admins permission.

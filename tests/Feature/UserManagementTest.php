@@ -57,7 +57,7 @@ test('admin can create an agent but not an admin', function () {
         ->assertSessionHasErrors('role');
 });
 
-test('admin cannot edit another admin', function () {
+test('admin cannot update another admin', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
@@ -65,7 +65,32 @@ test('admin cannot edit another admin', function () {
     $otherAdmin->assignRole('admin');
 
     $this->actingAs($admin)
-        ->get(route('users.edit', $otherAdmin))
+        ->put(route('users.update', $otherAdmin), [
+            'name' => $otherAdmin->name,
+            'email' => $otherAdmin->email,
+            'role' => 'admin',
+        ])
+        ->assertForbidden();
+});
+
+test('admin cannot delete another admin', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $otherAdmin = User::factory()->create();
+    $otherAdmin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->delete(route('users.destroy', $otherAdmin))
+        ->assertForbidden();
+});
+
+test('a user cannot delete themselves', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->assignRole('super-admin');
+
+    $this->actingAs($superAdmin)
+        ->delete(route('users.destroy', $superAdmin))
         ->assertForbidden();
 });
 
