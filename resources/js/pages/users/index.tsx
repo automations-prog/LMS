@@ -1,8 +1,9 @@
-import { Form, Head, Link, router, usePage } from '@inertiajs/react';
+import { Form, Head, router, usePage } from '@inertiajs/react';
 import { MoreHorizontal, Plus, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ImpersonateController from '@/actions/App/Http/Controllers/ImpersonateController';
 import UserController from '@/actions/App/Http/Controllers/UserController';
+import { DataPagination } from '@/components/data-pagination';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -33,7 +34,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { index } from '@/routes/users';
-import type { Auth } from '@/types';
+import type { Auth, Paginator } from '@/types';
 
 const ROLE_LABELS: Record<string, string> = {
     agent: 'Agent',
@@ -49,14 +50,6 @@ const ROLE_BADGE_CLASSES: Record<string, string> = {
 };
 
 const ALL_ROLES = ['agent', 'admin', 'super-admin'];
-
-const PER_PAGE_OPTIONS = [10, 15, 25, 50];
-
-type PaginationLink = {
-    url: string | null;
-    label: string;
-    active: boolean;
-};
 
 type UserRow = {
     id: number;
@@ -80,15 +73,7 @@ type Filters = {
 };
 
 type Props = {
-    users: {
-        data: UserRow[];
-        links: PaginationLink[];
-        current_page: number;
-        last_page: number;
-        total: number;
-        from: number | null;
-        to: number | null;
-    };
+    users: Paginator<UserRow>;
     assignableRoles: string[];
     filters: Filters;
     counts: Counts;
@@ -160,21 +145,32 @@ export default function UsersIndex({
     );
 
     const [search, setSearch] = useState(filters.search);
-    const isFirstRun = useRef(true);
+    const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        if (isFirstRun.current) {
-            isFirstRun.current = false;
-            return;
+    // Debounced directly from the input's onChange rather than a useEffect
+    // watching `search`: React StrictMode double-invokes effects in dev
+    // mode, and a ref-based "skip the first run" guard doesn't survive that
+    // — the second (spurious) invocation would fire a stale, page-less
+    // request that silently overwrote whatever page you'd just navigated to.
+    function handleSearchChange(value: string) {
+        setSearch(value);
+
+        if (searchTimeout.current) {
+            clearTimeout(searchTimeout.current);
         }
 
-        const timeout = setTimeout(() => {
-            applyFilters({ search }, filters);
+        searchTimeout.current = setTimeout(() => {
+            applyFilters({ search: value }, filters);
         }, 300);
+    }
 
-        return () => clearTimeout(timeout);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search]);
+    useEffect(() => {
+        return () => {
+            if (searchTimeout.current) {
+                clearTimeout(searchTimeout.current);
+            }
+        };
+    }, []);
 
     return (
         <>
@@ -309,7 +305,9 @@ export default function UsersIndex({
                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(e) =>
+                                handleSearchChange(e.target.value)
+                            }
                             placeholder="Search by name or email..."
                             className="pl-9"
                         />
@@ -704,79 +702,10 @@ export default function UsersIndex({
                     </table>
                 </div>
 
-                {users.total > 0 && (
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">
-                                    Rows per page
-                                </span>
-                                <Select
-                                    value={String(filters.per_page)}
-                                    onValueChange={(value) =>
-                                        applyFilters(
-                                            { per_page: Number(value) },
-                                            filters,
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger className="w-20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {PER_PAGE_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option}
-                                                value={String(option)}
-                                            >
-                                                {option}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <p className="text-sm text-muted-foreground">
-                                Showing {users.from} to {users.to} of{' '}
-                                {users.total} users
-                            </p>
-                        </div>
-
-                        {users.last_page > 1 && (
-                            <div className="flex flex-wrap gap-1">
-                                {users.links.map((link, i) => (
-                                    <Button
-                                        key={i}
-                                        variant={
-                                            link.active
-                                                ? 'default'
-                                                : 'outline'
-                                        }
-                                        size="sm"
-                                        disabled={!link.url}
-                                        asChild={!!link.url}
-                                    >
-                                        {link.url ? (
-                                            <Link
-                                                href={link.url}
-                                                preserveScroll
-                                                dangerouslySetInnerHTML={{
-                                                    __html: link.label,
-                                                }}
-                                            />
-                                        ) : (
-                                            <span
-                                                dangerouslySetInnerHTML={{
-                                                    __html: link.label,
-                                                }}
-                                            />
-                                        )}
-                                    </Button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
+                <DataPagination
+                    paginator={users}
+                    filters={{ search: filters.search, role: filters.role }}
+                />
             </div>
         </>
     );

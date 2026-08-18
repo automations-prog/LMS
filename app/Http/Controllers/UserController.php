@@ -21,8 +21,7 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', User::class);
 
-        $perPage = (int) $request->integer('per_page', 10);
-        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 10;
+        $perPage = $this->perPage($request);
 
         $search = $request->string('search')->trim()->toString();
         $role = $request->string('role')->trim()->toString();

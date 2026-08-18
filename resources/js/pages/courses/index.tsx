@@ -10,6 +10,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import CategoryController from '@/actions/App/Http/Controllers/CategoryController';
 import CourseController from '@/actions/App/Http/Controllers/CourseController';
+import { DataPagination } from '@/components/data-pagination';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -39,20 +40,12 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { create, edit, index } from '@/routes/courses';
-import type { Auth } from '@/types';
+import type { Auth, Paginator } from '@/types';
 
 const STATUS_BADGE_CLASSES: Record<string, string> = {
     draft: 'border-transparent bg-muted text-muted-foreground',
     published:
         'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-};
-
-const PER_PAGE_OPTIONS = [10, 15, 25, 50];
-
-type PaginationLink = {
-    url: string | null;
-    label: string;
-    active: boolean;
 };
 
 type Category = {
@@ -84,15 +77,7 @@ type Filters = {
 };
 
 type Props = {
-    courses: {
-        data: CourseRow[];
-        links: PaginationLink[];
-        current_page: number;
-        last_page: number;
-        total: number;
-        from: number | null;
-        to: number | null;
-    };
+    courses: Paginator<CourseRow>;
     categories: Category[];
     filters: Filters;
     counts: Counts;
@@ -271,21 +256,32 @@ export default function CoursesIndex({
     );
 
     const [search, setSearch] = useState(filters.search);
-    const isFirstRun = useRef(true);
+    const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        if (isFirstRun.current) {
-            isFirstRun.current = false;
-            return;
+    // Debounced directly from the input's onChange rather than a useEffect
+    // watching `search`: React StrictMode double-invokes effects in dev
+    // mode, and a ref-based "skip the first run" guard doesn't survive that
+    // — the second (spurious) invocation would fire a stale, page-less
+    // request that silently overwrote whatever page you'd just navigated to.
+    function handleSearchChange(value: string) {
+        setSearch(value);
+
+        if (searchTimeout.current) {
+            clearTimeout(searchTimeout.current);
         }
 
-        const timeout = setTimeout(() => {
-            applyFilters({ search }, filters);
+        searchTimeout.current = setTimeout(() => {
+            applyFilters({ search: value }, filters);
         }, 300);
+    }
 
-        return () => clearTimeout(timeout);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search]);
+    useEffect(() => {
+        return () => {
+            if (searchTimeout.current) {
+                clearTimeout(searchTimeout.current);
+            }
+        };
+    }, []);
 
     return (
         <>
@@ -335,7 +331,9 @@ export default function CoursesIndex({
                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(e) =>
+                                handleSearchChange(e.target.value)
+                            }
                             placeholder="Search by title..."
                             className="pl-9"
                         />
@@ -599,79 +597,14 @@ export default function CoursesIndex({
                     </table>
                 </div>
 
-                {courses.total > 0 && (
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">
-                                    Rows per page
-                                </span>
-                                <Select
-                                    value={String(filters.per_page)}
-                                    onValueChange={(value) =>
-                                        applyFilters(
-                                            { per_page: Number(value) },
-                                            filters,
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger className="w-20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {PER_PAGE_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option}
-                                                value={String(option)}
-                                            >
-                                                {option}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <p className="text-sm text-muted-foreground">
-                                Showing {courses.from} to {courses.to} of{' '}
-                                {courses.total} resources
-                            </p>
-                        </div>
-
-                        {courses.last_page > 1 && (
-                            <div className="flex flex-wrap gap-1">
-                                {courses.links.map((link, i) => (
-                                    <Button
-                                        key={i}
-                                        variant={
-                                            link.active
-                                                ? 'default'
-                                                : 'outline'
-                                        }
-                                        size="sm"
-                                        disabled={!link.url}
-                                        asChild={!!link.url}
-                                    >
-                                        {link.url ? (
-                                            <Link
-                                                href={link.url}
-                                                preserveScroll
-                                                dangerouslySetInnerHTML={{
-                                                    __html: link.label,
-                                                }}
-                                            />
-                                        ) : (
-                                            <span
-                                                dangerouslySetInnerHTML={{
-                                                    __html: link.label,
-                                                }}
-                                            />
-                                        )}
-                                    </Button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
+                <DataPagination
+                    paginator={courses}
+                    filters={{
+                        search: filters.search,
+                        category: filters.category,
+                        status: filters.status,
+                    }}
+                />
             </div>
         </>
     );
