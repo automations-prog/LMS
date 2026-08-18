@@ -20,6 +20,10 @@ class RolesAndPermissionsSeeder extends Seeder
         // reference permissions that no longer exist in the (recreated) table.
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
+        // Superseded by the single onboarding.review permission below —
+        // delete the orphaned rows rather than leave them unassigned.
+        Permission::whereIn('name', ['eligibility.review', 'training.review'])->delete();
+
         $permissions = [
             'users.view',
             'users.create',
@@ -32,8 +36,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'courses.update',
             'courses.delete',
             'courses.browse',
-            'eligibility.review',
-            'training.review',
+            'onboarding.review',
         ];
 
         foreach ($permissions as $permission) {
@@ -54,8 +57,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'courses.create',
             'courses.update',
             'courses.delete',
-            'eligibility.review',
-            'training.review',
+            'onboarding.review',
         ]);
 
         $agent = Role::findOrCreate('agent');

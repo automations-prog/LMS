@@ -15,3 +15,4 @@ require __DIR__.'/courses.php';
 require __DIR__.'/invite.php';
 require __DIR__.'/eligibility.php';
 require __DIR__.'/training.php';
+require __DIR__.'/onboarding.php';

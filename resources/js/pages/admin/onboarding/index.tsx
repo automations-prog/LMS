@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import EligibilityReviewController from '@/actions/App/Http/Controllers/EligibilityReviewController';
+import { show } from '@/actions/App/Http/Controllers/OnboardingReviewController';
 import { DataPagination } from '@/components/data-pagination';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -14,17 +14,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { index } from '@/routes/eligibility';
+import { index } from '@/routes/onboarding';
 import type { Paginator } from '@/types';
 
-const STATUS_LABELS: Record<string, string> = {
+const ELIGIBILITY_STATUS_LABELS: Record<string, string> = {
     pending: 'Pending',
     flagged_for_waiver: 'Flagged for waiver',
     cleared: 'Eligible',
     not_eligible: 'Not eligible',
 };
 
-const STATUS_BADGE_CLASSES: Record<string, string> = {
+const ELIGIBILITY_BADGE_CLASSES: Record<string, string> = {
     pending:
         'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
     flagged_for_waiver:
@@ -35,33 +35,66 @@ const STATUS_BADGE_CLASSES: Record<string, string> = {
         'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
 };
 
-const STATUS_OPTIONS = [
-    'pending',
-    'flagged_for_waiver',
-    'cleared',
-    'not_eligible',
-];
+const TRAINING_STATUS_LABELS: Record<string, string> = {
+    pending_review: 'Pending review',
+    verified: 'Verified',
+    rejected: 'Rejected',
+};
 
-type AttestationRow = {
+const TRAINING_BADGE_CLASSES: Record<string, string> = {
+    pending_review:
+        'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
+    verified:
+        'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+    rejected:
+        'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+};
+
+const NOT_SUBMITTED_CLASSES =
+    'border-transparent bg-muted text-muted-foreground';
+
+function StatusBadge({
+    status,
+    labels,
+    classes,
+}: {
+    status: string | null;
+    labels: Record<string, string>;
+    classes: Record<string, string>;
+}) {
+    if (!status) {
+        return (
+            <Badge variant="outline" className={NOT_SUBMITTED_CLASSES}>
+                Not submitted
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge variant="outline" className={classes[status]}>
+            {labels[status] ?? status}
+        </Badge>
+    );
+}
+
+type AgentRow = {
     id: number;
-    status: string;
-    created_at: string;
-    user: { id: number; name: string; email: string };
+    name: string;
+    email: string;
+    eligibility_attestation: { status: string } | null;
+    training_completion: { status: string } | null;
 };
 
 type Filters = {
-    status: string;
     search: string;
+    eligibility_status: string;
+    training_status: string;
 };
 
 type Props = {
-    attestations: Paginator<AttestationRow>;
+    agents: Paginator<AgentRow>;
     filters: Filters;
 };
-
-const submittedFormatter = new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-});
 
 function applyFilters(overrides: Partial<Filters>, filters: Filters) {
     router.get(
@@ -71,7 +104,7 @@ function applyFilters(overrides: Partial<Filters>, filters: Filters) {
     );
 }
 
-export default function EligibilityIndex({ attestations, filters }: Props) {
+export default function OnboardingIndex({ agents, filters }: Props) {
     const [search, setSearch] = useState(filters.search);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -99,13 +132,13 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
 
     return (
         <>
-            <Head title="Eligibility review" />
+            <Head title="Onboarding review" />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <Heading
                     variant="small"
-                    title="Eligibility review"
-                    description="Review agent eligibility attestations"
+                    title="Onboarding review"
+                    description="Review agent eligibility and training progress"
                 />
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -120,24 +153,68 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                     </div>
 
                     <Select
-                        value={filters.status === '' ? 'all' : filters.status}
+                        value={
+                            filters.eligibility_status === ''
+                                ? 'all'
+                                : filters.eligibility_status
+                        }
                         onValueChange={(status) =>
                             applyFilters(
-                                { status: status === 'all' ? '' : status },
+                                {
+                                    eligibility_status:
+                                        status === 'all' ? '' : status,
+                                },
                                 filters,
                             )
                         }
                     >
                         <SelectTrigger className="w-56">
-                            <SelectValue />
+                            <SelectValue placeholder="Eligibility status" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All statuses</SelectItem>
-                            {STATUS_OPTIONS.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                    {STATUS_LABELS[status]}
-                                </SelectItem>
-                            ))}
+                            <SelectItem value="all">
+                                All eligibility statuses
+                            </SelectItem>
+                            {Object.entries(ELIGIBILITY_STATUS_LABELS).map(
+                                ([status, label]) => (
+                                    <SelectItem key={status} value={status}>
+                                        {label}
+                                    </SelectItem>
+                                ),
+                            )}
+                        </SelectContent>
+                    </Select>
+
+                    <Select
+                        value={
+                            filters.training_status === ''
+                                ? 'all'
+                                : filters.training_status
+                        }
+                        onValueChange={(status) =>
+                            applyFilters(
+                                {
+                                    training_status:
+                                        status === 'all' ? '' : status,
+                                },
+                                filters,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-56">
+                            <SelectValue placeholder="Training status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                All training statuses
+                            </SelectItem>
+                            {Object.entries(TRAINING_STATUS_LABELS).map(
+                                ([status, label]) => (
+                                    <SelectItem key={status} value={status}>
+                                        {label}
+                                    </SelectItem>
+                                ),
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
@@ -148,10 +225,10 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                             <tr className="border-b border-sidebar-border/70 text-left text-muted-foreground dark:border-sidebar-border">
                                 <th className="px-4 py-3 font-medium">Agent</th>
                                 <th className="px-4 py-3 font-medium">
-                                    Submitted
+                                    Eligibility
                                 </th>
                                 <th className="px-4 py-3 font-medium">
-                                    Status
+                                    Training
                                 </th>
                                 <th className="px-4 py-3 font-medium">
                                     <span className="sr-only">Actions</span>
@@ -159,35 +236,36 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                             </tr>
                         </thead>
                         <tbody>
-                            {attestations.data.map((attestation) => (
+                            {agents.data.map((agent) => (
                                 <tr
-                                    key={attestation.id}
+                                    key={agent.id}
                                     className="border-b border-sidebar-border/70 last:border-0 dark:border-sidebar-border"
                                 >
                                     <td className="px-4 py-3">
-                                        <div>{attestation.user.name}</div>
+                                        <div>{agent.name}</div>
                                         <div className="text-xs text-muted-foreground">
-                                            {attestation.user.email}
+                                            {agent.email}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-muted-foreground">
-                                        {submittedFormatter.format(
-                                            new Date(attestation.created_at),
-                                        )}
+                                    <td className="px-4 py-3">
+                                        <StatusBadge
+                                            status={
+                                                agent.eligibility_attestation
+                                                    ?.status ?? null
+                                            }
+                                            labels={ELIGIBILITY_STATUS_LABELS}
+                                            classes={ELIGIBILITY_BADGE_CLASSES}
+                                        />
                                     </td>
                                     <td className="px-4 py-3">
-                                        <Badge
-                                            variant="outline"
-                                            className={
-                                                STATUS_BADGE_CLASSES[
-                                                    attestation.status
-                                                ]
+                                        <StatusBadge
+                                            status={
+                                                agent.training_completion
+                                                    ?.status ?? null
                                             }
-                                        >
-                                            {STATUS_LABELS[
-                                                attestation.status
-                                            ] ?? attestation.status}
-                                        </Badge>
+                                            labels={TRAINING_STATUS_LABELS}
+                                            classes={TRAINING_BADGE_CLASSES}
+                                        />
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <Button
@@ -195,11 +273,7 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                                             size="sm"
                                             asChild
                                         >
-                                            <Link
-                                                href={EligibilityReviewController.show(
-                                                    attestation.id,
-                                                )}
-                                            >
+                                            <Link href={show(agent.id)}>
                                                 Review
                                             </Link>
                                         </Button>
@@ -207,13 +281,13 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                                 </tr>
                             ))}
 
-                            {attestations.data.length === 0 && (
+                            {agents.data.length === 0 && (
                                 <tr>
                                     <td
                                         colSpan={4}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
-                                        No attestations found.
+                                        No agents found.
                                     </td>
                                 </tr>
                             )}
@@ -222,18 +296,22 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                 </div>
 
                 <DataPagination
-                    paginator={attestations}
-                    filters={{ status: filters.status, search: filters.search }}
+                    paginator={agents}
+                    filters={{
+                        search: filters.search,
+                        eligibility_status: filters.eligibility_status,
+                        training_status: filters.training_status,
+                    }}
                 />
             </div>
         </>
     );
 }
 
-EligibilityIndex.layout = {
+OnboardingIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Eligibility review',
+            title: 'Onboarding review',
             href: index(),
         },
     ],

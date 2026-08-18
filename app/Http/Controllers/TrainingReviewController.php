@@ -10,51 +10,10 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
-use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TrainingReviewController extends Controller
 {
-    /**
-     * List training completions for coach/admin review.
-     */
-    public function index(Request $request): Response
-    {
-        Gate::authorize('viewAny', TrainingCompletion::class);
-
-        $status = $request->string('status')->trim()->toString();
-        $search = $request->string('search')->trim()->toString();
-
-        $completions = TrainingCompletion::query()
-            ->with('user')
-            ->when($status !== '', fn ($query) => $query->where('status', $status))
-            ->when($search !== '', fn ($query) => $query->whereHas('user', fn ($query) => $query
-                ->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")))
-            ->orderByDesc('created_at')
-            ->paginate(25)
-            ->appends(['status' => $status, 'search' => $search]);
-
-        return Inertia::render('admin/training/index', [
-            'completions' => $completions,
-            'filters' => ['status' => $status, 'search' => $search],
-        ]);
-    }
-
-    /**
-     * Show a single training completion's details for review.
-     */
-    public function show(TrainingCompletion $trainingCompletion): Response
-    {
-        Gate::authorize('view', $trainingCompletion);
-
-        $trainingCompletion->load(['user', 'reviewer']);
-
-        return Inertia::render('admin/training/show', [
-            'completion' => $trainingCompletion,
-        ]);
-    }
-
     /**
      * Stream the uploaded training certificate.
      */

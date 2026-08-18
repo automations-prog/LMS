@@ -76,30 +76,17 @@ test('guests are redirected to login on all training routes', function () {
     $completion = TrainingCompletion::factory()->create();
 
     $this->post(route('training.store'), ['certificate_file' => certificateFile()])->assertRedirect(route('login'));
-    $this->get(route('training.index'))->assertRedirect(route('login'));
-    $this->get(route('training.show', $completion))->assertRedirect(route('login'));
+    $this->get(route('training.document', $completion))->assertRedirect(route('login'));
 });
 
-test('admin can list, search, view, and download a certificate', function () {
+test('admin can download a certificate', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
-    $agent = User::factory()->create(['name' => 'Findable Person']);
+    $agent = User::factory()->create();
     $agent->assignRole('agent');
     $completion = TrainingCompletion::factory()->for($agent)->create();
     Storage::disk('local')->put($completion->certificate_path, 'certificate contents');
-
-    $this->actingAs($admin)
-        ->get(route('training.index', ['search' => 'Findable']))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('admin/training/index')
-            ->has('completions.data', 1));
-
-    $this->actingAs($admin)
-        ->get(route('training.show', $completion))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('admin/training/show'));
 
     $this->actingAs($admin)
         ->get(route('training.document', $completion))
@@ -168,8 +155,6 @@ test('a non-training-reviewer agent is forbidden from all admin training routes'
     $agent->assignRole('agent');
     $completion = TrainingCompletion::factory()->create();
 
-    $this->actingAs($agent)->get(route('training.index'))->assertForbidden();
-    $this->actingAs($agent)->get(route('training.show', $completion))->assertForbidden();
     $this->actingAs($agent)->get(route('training.document', $completion))->assertForbidden();
     $this->actingAs($agent)
         ->post(route('training.decision', $completion), ['status' => 'verified'])

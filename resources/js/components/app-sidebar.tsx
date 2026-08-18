@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { GraduationCap, LayoutGrid, ShieldCheck, Users } from 'lucide-react';
+import { LayoutGrid, ShieldCheck, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -13,8 +13,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { index as eligibilityIndex } from '@/routes/eligibility';
-import { index as trainingIndex } from '@/routes/training';
+import { index as onboardingIndex } from '@/routes/onboarding';
 import { index as usersIndex } from '@/routes/users';
 import type { Auth, NavItem } from '@/types';
 
@@ -37,21 +36,12 @@ export function AppSidebar() {
                   },
               ]
             : []),
-        ...(permissions.includes('eligibility.review')
+        ...(permissions.includes('onboarding.review')
             ? [
                   {
-                      title: 'Eligibility',
-                      href: eligibilityIndex(),
+                      title: 'Onboarding',
+                      href: onboardingIndex(),
                       icon: ShieldCheck,
-                  },
-              ]
-            : []),
-        ...(permissions.includes('training.review')
-            ? [
-                  {
-                      title: 'Training',
-                      href: trainingIndex(),
-                      icon: GraduationCap,
                   },
               ]
             : []),

@@ -93,8 +93,7 @@ test('guests are redirected to login on onboarding and admin eligibility routes'
     $this->get(route('eligibility.create'))->assertRedirect(route('login'));
     $this->post(route('eligibility.store'), eligibilityPayload())->assertRedirect(route('login'));
     $this->get(route('eligibility.pending'))->assertRedirect(route('login'));
-    $this->get(route('eligibility.index'))->assertRedirect(route('login'));
-    $this->get(route('eligibility.show', $attestation))->assertRedirect(route('login'));
+    $this->get(route('eligibility.document', $attestation))->assertRedirect(route('login'));
 });
 
 test('an agent with a decided attestation is redirected to the dashboard from the form', function () {
@@ -189,7 +188,7 @@ test('a guest cannot mark enrollment as done', function () {
         ->assertRedirect(route('login'));
 });
 
-test('admin can view the flagged list and decide a case', function () {
+test('admin can decide a flagged case', function () {
     Notification::fake();
 
     $admin = User::factory()->create();
@@ -198,13 +197,6 @@ test('admin can view the flagged list and decide a case', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');
     $attestation = EligibilityAttestation::factory()->flaggedForWaiver()->for($agent)->create();
-
-    $this->actingAs($admin)
-        ->get(route('eligibility.index'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('admin/eligibility/index')
-            ->has('attestations.data', 1));
 
     $this->actingAs($admin)
         ->post(route('eligibility.decision', $attestation), ['status' => 'cleared'])
@@ -224,8 +216,7 @@ test('agent cannot access admin eligibility routes', function () {
     $agent->assignRole('agent');
     $attestation = EligibilityAttestation::factory()->flaggedForWaiver()->for($agent)->create();
 
-    $this->actingAs($agent)->get(route('eligibility.index'))->assertForbidden();
-    $this->actingAs($agent)->get(route('eligibility.show', $attestation))->assertForbidden();
+    $this->actingAs($agent)->get(route('eligibility.document', $attestation))->assertForbidden();
     $this->actingAs($agent)
         ->post(route('eligibility.decision', $attestation), ['status' => 'cleared'])
         ->assertForbidden();
@@ -276,38 +267,4 @@ test('an admin can reopen a decided case back to flagged for waiver without noti
     expect($attestation->fresh()->status)->toBe(EligibilityAttestation::STATUS_FLAGGED_FOR_WAIVER);
 
     Notification::assertNothingSent();
-});
-
-test('the admin eligibility list can be filtered by agent name or email', function () {
-    $admin = User::factory()->create();
-    $admin->assignRole('admin');
-
-    $match = User::factory()->create(['name' => 'Findable Person']);
-    $match->assignRole('agent');
-    EligibilityAttestation::factory()->for($match)->create();
-
-    $other = User::factory()->create(['name' => 'Someone Else']);
-    $other->assignRole('agent');
-    EligibilityAttestation::factory()->for($other)->create();
-
-    $response = $this->actingAs($admin)
-        ->get(route('eligibility.index', ['search' => 'Findable']))
-        ->assertOk();
-
-    $response->assertInertia(fn ($page) => $page
-        ->has('attestations.data', 1)
-        ->where('attestations.data.0.user.name', 'Findable Person'));
-});
-
-test('the admin eligibility list shows all statuses by default', function () {
-    $admin = User::factory()->create();
-    $admin->assignRole('admin');
-
-    EligibilityAttestation::factory()->create(['status' => EligibilityAttestation::STATUS_CLEARED]);
-    EligibilityAttestation::factory()->flaggedForWaiver()->create();
-    EligibilityAttestation::factory()->create(['status' => EligibilityAttestation::STATUS_NOT_ELIGIBLE]);
-
-    $this->actingAs($admin)
-        ->get(route('eligibility.index'))
-        ->assertInertia(fn ($page) => $page->has('attestations.data', 3));
 });

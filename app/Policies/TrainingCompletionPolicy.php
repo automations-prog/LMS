@@ -12,7 +12,7 @@ class TrainingCompletionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('training.review');
+        return $user->can('onboarding.review');
     }
 
     /**
@@ -20,7 +20,7 @@ class TrainingCompletionPolicy
      */
     public function view(User $user, TrainingCompletion $trainingCompletion): bool
     {
-        return $user->can('training.review');
+        return $user->can('onboarding.review');
     }
 
     /**
@@ -28,6 +28,6 @@ class TrainingCompletionPolicy
      */
     public function review(User $user, TrainingCompletion $trainingCompletion): bool
     {
-        return $user->can('training.review');
+        return $user->can('onboarding.review');
     }
 }

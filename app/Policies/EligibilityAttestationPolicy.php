@@ -12,7 +12,7 @@ class EligibilityAttestationPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('eligibility.review');
+        return $user->can('onboarding.review');
     }
 
     /**
@@ -20,7 +20,7 @@ class EligibilityAttestationPolicy
      */
     public function view(User $user, EligibilityAttestation $eligibilityAttestation): bool
     {
-        return $user->can('eligibility.review');
+        return $user->can('onboarding.review');
     }
 
     /**
@@ -28,6 +28,6 @@ class EligibilityAttestationPolicy
      */
     public function review(User $user, EligibilityAttestation $eligibilityAttestation): bool
     {
-        return $user->can('eligibility.review');
+        return $user->can('onboarding.review');
     }
 }

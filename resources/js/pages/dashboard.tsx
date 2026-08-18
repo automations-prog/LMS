@@ -19,8 +19,7 @@ import {
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 import { dashboard } from '@/routes';
-import { index as eligibilityIndex } from '@/routes/eligibility';
-import { index as trainingIndex } from '@/routes/training';
+import { index as onboardingIndex } from '@/routes/onboarding';
 
 type DataPoint = {
     key: string;
@@ -54,19 +53,19 @@ type Props = {
 const STAT_CARDS: {
     key: keyof Stats;
     label: string;
-    href?: ReturnType<typeof eligibilityIndex>;
+    href?: ReturnType<typeof onboardingIndex>;
 }[] = [
     { key: 'total_users', label: 'Total users' },
     { key: 'active_users', label: 'Active users' },
     {
         key: 'pending_eligibility_reviews',
         label: 'Pending eligibility reviews',
-        href: eligibilityIndex(),
+        href: onboardingIndex(),
     },
     {
         key: 'pending_training_reviews',
         label: 'Pending training reviews',
-        href: trainingIndex(),
+        href: onboardingIndex(),
     },
 ];
 

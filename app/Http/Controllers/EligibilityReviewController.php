@@ -10,51 +10,10 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
-use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EligibilityReviewController extends Controller
 {
-    /**
-     * List eligibility attestations for coach/admin review.
-     */
-    public function index(Request $request): Response
-    {
-        Gate::authorize('viewAny', EligibilityAttestation::class);
-
-        $status = $request->string('status')->trim()->toString();
-        $search = $request->string('search')->trim()->toString();
-
-        $attestations = EligibilityAttestation::query()
-            ->with('user')
-            ->when($status !== '', fn ($query) => $query->where('status', $status))
-            ->when($search !== '', fn ($query) => $query->whereHas('user', fn ($query) => $query
-                ->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")))
-            ->orderByDesc('created_at')
-            ->paginate(25)
-            ->appends(['status' => $status, 'search' => $search]);
-
-        return Inertia::render('admin/eligibility/index', [
-            'attestations' => $attestations,
-            'filters' => ['status' => $status, 'search' => $search],
-        ]);
-    }
-
-    /**
-     * Show a single attestation's details for review.
-     */
-    public function show(EligibilityAttestation $eligibilityAttestation): Response
-    {
-        Gate::authorize('view', $eligibilityAttestation);
-
-        $eligibilityAttestation->load(['user', 'reviewer']);
-
-        return Inertia::render('admin/eligibility/show', [
-            'attestation' => $eligibilityAttestation,
-        ]);
-    }
-
     /**
      * Stream the uploaded work-authorization document.
      */
