@@ -28,7 +28,7 @@ test('admins and super admins see the management dashboard', function () {
         ->assertInertia(fn ($page) => $page->component('dashboard'));
 });
 
-test('agents see the agent dashboard, with no user-management data', function () {
+test('agents see the agent dashboard, with no user-management or resource data', function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 
     $agent = User::factory()->create();
@@ -41,7 +41,7 @@ test('agents see the agent dashboard, with no user-management data', function ()
 
     $response->assertInertia(fn ($page) => $page
         ->component('dashboard-agent')
-        ->where('stats.available', 1)
-        ->missing('stats.total_users')
+        ->missing('stats')
+        ->missing('recent')
         ->missing('charts'));
 });

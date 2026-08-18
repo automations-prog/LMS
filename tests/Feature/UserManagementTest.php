@@ -1,7 +1,10 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\AgentInviteNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
     $this->seed(RolesAndPermissionsSeeder::class);
@@ -16,7 +19,9 @@ test('super admin can view the user list', function () {
         ->assertOk();
 });
 
-test('super admin can create an admin', function () {
+test('super admin can create an admin directly with a password, active immediately', function () {
+    Notification::fake();
+
     $superAdmin = User::factory()->create();
     $superAdmin->assignRole('super-admin');
 
@@ -32,10 +37,33 @@ test('super admin can create an admin', function () {
         ])
         ->assertRedirect($referer);
 
-    $this->assertTrue(User::whereEmail('new-admin@example.com')->first()?->hasRole('admin'));
+    $newAdmin = User::whereEmail('new-admin@example.com')->first();
+
+    $this->assertTrue($newAdmin?->hasRole('admin'));
+    expect($newAdmin->is_active)->toBeTrue();
+    expect(Hash::check('Password123!', $newAdmin->password))->toBeTrue();
+
+    Notification::assertNothingSent();
+});
+
+test('creating an admin without a password is rejected', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->assignRole('super-admin');
+
+    $this->actingAs($superAdmin)
+        ->post(route('users.store'), [
+            'name' => 'New Admin',
+            'email' => 'new-admin@example.com',
+            'role' => 'admin',
+        ])
+        ->assertSessionHasErrors('password');
+
+    $this->assertNull(User::whereEmail('new-admin@example.com')->first());
 });
 
 test('admin can create an agent but not an admin', function () {
+    Notification::fake();
+
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
@@ -46,18 +74,19 @@ test('admin can create an agent but not an admin', function () {
         ->post(route('users.store'), [
             'name' => 'New Agent',
             'email' => 'new-agent@example.com',
-            'password' => 'Password123!',
             'role' => 'agent',
         ])
         ->assertRedirect($referer);
 
-    $this->assertTrue(User::whereEmail('new-agent@example.com')->first()?->hasRole('agent'));
+    $newAgent = User::whereEmail('new-agent@example.com')->first();
+
+    $this->assertTrue($newAgent?->hasRole('agent'));
+    Notification::assertSentTo($newAgent, AgentInviteNotification::class);
 
     $this->actingAs($admin)
         ->post(route('users.store'), [
             'name' => 'New Admin',
             'email' => 'blocked-admin@example.com',
-            'password' => 'Password123!',
             'role' => 'admin',
         ])
         ->assertSessionHasErrors('role');

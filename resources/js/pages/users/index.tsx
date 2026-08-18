@@ -126,16 +126,22 @@ const COUNT_CARDS: { key: keyof Counts; label: string }[] = [
 function RoleSelect({
     assignableRoles,
     defaultValue,
+    onValueChange,
     error,
 }: {
     assignableRoles: string[];
     defaultValue?: string;
+    onValueChange?: (value: string) => void;
     error?: string;
 }) {
     return (
         <div className="grid gap-2">
             <Label htmlFor="role">Role</Label>
-            <Select name="role" defaultValue={defaultValue}>
+            <Select
+                name="role"
+                defaultValue={defaultValue}
+                onValueChange={onValueChange}
+            >
                 <SelectTrigger id="role" className="w-full">
                     <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
@@ -151,6 +157,11 @@ function RoleSelect({
         </div>
     );
 }
+
+// Agents are invited via a signed "set your password" email and never have a
+// password collected here; admins/super admins are created directly and need
+// one set up front.
+const ROLES_REQUIRING_PASSWORD = ['admin', 'super-admin'];
 
 function applyFilters(overrides: Partial<Filters>, filters: Filters) {
     router.get(
@@ -176,6 +187,7 @@ export default function UsersIndex({
     );
 
     const [createOpen, setCreateOpen] = useState(false);
+    const [createRole, setCreateRole] = useState(assignableRoles[0]);
     const [editingUserId, setEditingUserId] = useState<number | null>(null);
     const [deletingUserId, setDeletingUserId] = useState<number | null>(
         null,
@@ -256,7 +268,16 @@ export default function UsersIndex({
                     />
 
                     {canCreate && (
-                        <Sheet open={createOpen} onOpenChange={setCreateOpen}>
+                        <Sheet
+                            open={createOpen}
+                            onOpenChange={(open) => {
+                                setCreateOpen(open);
+
+                                if (open) {
+                                    setCreateRole(assignableRoles[0]);
+                                }
+                            }}
+                        >
                             <SheetTrigger asChild>
                                 <Button className={brandButtonClass}>
                                     <Plus className="size-4" />
@@ -268,7 +289,13 @@ export default function UsersIndex({
                                 className="flex flex-col gap-0 sm:max-w-md"
                             >
                                 <SheetHeader>
-                                    <SheetTitle>Add user</SheetTitle>
+                                    <SheetTitle>
+                                        {ROLES_REQUIRING_PASSWORD.includes(
+                                            createRole,
+                                        )
+                                            ? 'Add user'
+                                            : 'Invite user'}
+                                    </SheetTitle>
                                 </SheetHeader>
 
                                 <Form
@@ -312,23 +339,6 @@ export default function UsersIndex({
                                                     />
                                                 </div>
 
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="password">
-                                                        Password
-                                                    </Label>
-                                                    <PasswordInput
-                                                        id="password"
-                                                        name="password"
-                                                        required
-                                                        autoComplete="new-password"
-                                                    />
-                                                    <InputError
-                                                        message={
-                                                            errors.password
-                                                        }
-                                                    />
-                                                </div>
-
                                                 <RoleSelect
                                                     assignableRoles={
                                                         assignableRoles
@@ -336,8 +346,32 @@ export default function UsersIndex({
                                                     defaultValue={
                                                         assignableRoles[0]
                                                     }
+                                                    onValueChange={
+                                                        setCreateRole
+                                                    }
                                                     error={errors.role}
                                                 />
+
+                                                {ROLES_REQUIRING_PASSWORD.includes(
+                                                    createRole,
+                                                ) && (
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="password">
+                                                            Password
+                                                        </Label>
+                                                        <PasswordInput
+                                                            id="password"
+                                                            name="password"
+                                                            required
+                                                            autoComplete="new-password"
+                                                        />
+                                                        <InputError
+                                                            message={
+                                                                errors.password
+                                                            }
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <SheetFooter className="flex-row justify-end gap-2 border-t">
@@ -356,7 +390,11 @@ export default function UsersIndex({
                                                     {processing && (
                                                         <Spinner />
                                                     )}
-                                                    Create user
+                                                    {ROLES_REQUIRING_PASSWORD.includes(
+                                                        createRole,
+                                                    )
+                                                        ? 'Create user'
+                                                        : 'Send invite'}
                                                 </Button>
                                             </SheetFooter>
                                         </>

@@ -25,14 +25,18 @@ class StoreUserRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
+     * Agents are invited via a signed "set your password" link, so no
+     * password is collected for them here. Admins and super admins are
+     * created directly and log in immediately, so a password is required.
+     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             ...$this->profileRules(),
-            'password' => ['required', 'string', Password::default()],
             'role' => ['required', 'string', Rule::in(UserPolicy::assignableRoles($this->user()))],
+            'password' => ['nullable', 'required_if:role,admin,super-admin', 'string', Password::default()],
         ];
     }
 }

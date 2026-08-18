@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
+use App\Notifications\AgentInviteNotification;
 use App\Policies\UserPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,16 +73,28 @@ class UserController extends Controller
     {
         $validated = $request->validated();
 
+        // Agents are invited via a signed "set your password" link and stay
+        // inactive until they accept it. Admins/super admins are created
+        // directly with the password the creator chose, active right away.
+        $isInvited = $validated['role'] === 'agent';
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => $validated['password'],
-            'email_verified_at' => now(),
+            'password' => $isInvited ? 'password' : $validated['password'],
+            'is_active' => ! $isInvited,
         ]);
 
         $user->syncRoles([$validated['role']]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
+        if ($isInvited) {
+            $user->notify(new AgentInviteNotification);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $isInvited ? __('User created and invited.') : __('User created.'),
+        ]);
 
         return back();
     }
