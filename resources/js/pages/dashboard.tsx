@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import {
     Bar,
     BarChart,
@@ -16,9 +16,11 @@ import {
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
-    type ChartConfig,
 } from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
 import { dashboard } from '@/routes';
+import { index as eligibilityIndex } from '@/routes/eligibility';
+import { index as trainingIndex } from '@/routes/training';
 
 type DataPoint = {
     key: string;
@@ -33,14 +35,14 @@ type SignupPoint = {
 
 type Stats = {
     total_users: number;
-    total_resources: number;
-    published_resources: number;
     active_users: number;
+    pending_eligibility_reviews: number;
+    pending_training_reviews: number;
 };
 
 type Charts = {
     users_by_role: DataPoint[];
-    resources_by_status: DataPoint[];
+    eligibility_by_status: DataPoint[];
     signups_per_day: SignupPoint[];
 };
 
@@ -49,11 +51,23 @@ type Props = {
     charts: Charts;
 };
 
-const STAT_CARDS: { key: keyof Stats; label: string }[] = [
+const STAT_CARDS: {
+    key: keyof Stats;
+    label: string;
+    href?: ReturnType<typeof eligibilityIndex>;
+}[] = [
     { key: 'total_users', label: 'Total users' },
     { key: 'active_users', label: 'Active users' },
-    { key: 'total_resources', label: 'Total resources' },
-    { key: 'published_resources', label: 'Published resources' },
+    {
+        key: 'pending_eligibility_reviews',
+        label: 'Pending eligibility reviews',
+        href: eligibilityIndex(),
+    },
+    {
+        key: 'pending_training_reviews',
+        label: 'Pending training reviews',
+        href: trainingIndex(),
+    },
 ];
 
 const ROLE_CHART_CONFIG = {
@@ -62,9 +76,11 @@ const ROLE_CHART_CONFIG = {
     'super-admin': { label: 'Super Admins', color: 'var(--chart-3)' },
 } satisfies ChartConfig;
 
-const STATUS_CHART_CONFIG = {
-    published: { label: 'Published', color: 'var(--chart-1)' },
-    draft: { label: 'Draft', color: 'var(--chart-2)' },
+const ELIGIBILITY_CHART_CONFIG = {
+    pending: { label: 'Pending', color: 'var(--chart-1)' },
+    flagged_for_waiver: { label: 'Flagged', color: 'var(--chart-2)' },
+    cleared: { label: 'Eligible', color: 'var(--chart-3)' },
+    not_eligible: { label: 'Not eligible', color: 'var(--chart-4)' },
 } satisfies ChartConfig;
 
 const SIGNUPS_CHART_CONFIG = {
@@ -72,7 +88,7 @@ const SIGNUPS_CHART_CONFIG = {
 } satisfies ChartConfig;
 
 export default function Dashboard({ stats, charts }: Props) {
-    const totalResources = charts.resources_by_status.reduce(
+    const totalCases = charts.eligibility_by_status.reduce(
         (sum, point) => sum + point.value,
         0,
     );
@@ -82,19 +98,35 @@ export default function Dashboard({ stats, charts }: Props) {
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {STAT_CARDS.map((card) => (
-                        <div
-                            key={card.key}
-                            className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
-                        >
-                            <p className="text-sm text-muted-foreground">
-                                {card.label}
-                            </p>
-                            <p className="mt-1 text-2xl font-semibold">
-                                {stats[card.key]}
-                            </p>
-                        </div>
-                    ))}
+                    {STAT_CARDS.map((card) => {
+                        const content = (
+                            <>
+                                <p className="text-sm text-muted-foreground">
+                                    {card.label}
+                                </p>
+                                <p className="mt-1 text-2xl font-semibold">
+                                    {stats[card.key]}
+                                </p>
+                            </>
+                        );
+
+                        return card.href ? (
+                            <Link
+                                key={card.key}
+                                href={card.href}
+                                className="rounded-xl border border-sidebar-border/70 p-4 transition-colors hover:bg-accent/50 dark:border-sidebar-border"
+                            >
+                                {content}
+                            </Link>
+                        ) : (
+                            <div
+                                key={card.key}
+                                className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
+                            >
+                                {content}
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -139,10 +171,10 @@ export default function Dashboard({ stats, charts }: Props) {
 
                     <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
                         <p className="mb-4 text-sm font-medium">
-                            Resources by status
+                            Eligibility by status
                         </p>
                         <ChartContainer
-                            config={STATUS_CHART_CONFIG}
+                            config={ELIGIBILITY_CHART_CONFIG}
                             className="mx-auto aspect-auto h-52 w-full"
                         >
                             <PieChart>
@@ -151,14 +183,14 @@ export default function Dashboard({ stats, charts }: Props) {
                                     content={<ChartTooltipContent hideLabel />}
                                 />
                                 <Pie
-                                    data={charts.resources_by_status}
+                                    data={charts.eligibility_by_status}
                                     dataKey="value"
                                     nameKey="key"
                                     innerRadius={50}
                                     outerRadius={75}
                                     strokeWidth={4}
                                 >
-                                    {charts.resources_by_status.map(
+                                    {charts.eligibility_by_status.map(
                                         (point) => (
                                             <Cell
                                                 key={point.key}
@@ -189,14 +221,17 @@ export default function Dashboard({ stats, charts }: Props) {
                                                         y={viewBox.cy}
                                                         className="fill-foreground text-2xl font-semibold"
                                                     >
-                                                        {totalResources}
+                                                        {totalCases}
                                                     </tspan>
                                                     <tspan
                                                         x={viewBox.cx}
-                                                        y={(viewBox.cy ?? 0) + 20}
+                                                        y={
+                                                            (viewBox.cy ?? 0) +
+                                                            20
+                                                        }
                                                         className="fill-muted-foreground text-xs"
                                                     >
-                                                        Resources
+                                                        Cases
                                                     </tspan>
                                                 </text>
                                             );
@@ -205,8 +240,8 @@ export default function Dashboard({ stats, charts }: Props) {
                                 </Pie>
                             </PieChart>
                         </ChartContainer>
-                        <div className="mt-2 flex items-center justify-center gap-4 text-sm">
-                            {charts.resources_by_status.map((point) => (
+                        <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-sm">
+                            {charts.eligibility_by_status.map((point) => (
                                 <div
                                     key={point.key}
                                     className="flex items-center gap-1.5"

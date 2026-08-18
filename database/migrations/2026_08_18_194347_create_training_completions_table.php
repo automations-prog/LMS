@@ -11,19 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('eligibility_attestations', function (Blueprint $table) {
+        Schema::create('training_completions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
-            $table->date('date_of_birth');
-            $table->string('home_state');
-            $table->boolean('has_felony_conviction');
-            $table->text('felony_details')->nullable();
-            $table->boolean('is_us_citizen');
-            $table->string('work_authorization_path')->nullable();
+            $table->string('certificate_path');
             $table->string('status');
+            $table->text('note')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('reviewed_at')->nullable();
-            $table->timestamp('enrollment_completed_at')->nullable();
             $table->timestamps();
         });
     }
@@ -33,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('eligibility_attestations');
+        Schema::dropIfExists('training_completions');
     }
 };

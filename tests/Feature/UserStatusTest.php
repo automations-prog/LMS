@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\EligibilityAttestation;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 
@@ -25,6 +26,7 @@ test('suspended user cannot log in', function () {
 test('an already logged-in user is logged out once suspended', function () {
     $user = User::factory()->create();
     $user->assignRole('agent');
+    EligibilityAttestation::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('dashboard'))

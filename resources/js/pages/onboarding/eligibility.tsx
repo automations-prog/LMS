@@ -5,6 +5,7 @@ import FileInput from '@/components/file-input';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -19,13 +20,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { brandButtonClass } from '@/lib/brand-theme';
 import { dashboard } from '@/routes';
 
-const US_STATES = [
-    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID',
-    'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS',
-    'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK',
-    'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV',
-    'WI', 'WY',
-];
+type Props = {
+    states: string[];
+};
 
 function YesNoSelect({
     name,
@@ -55,9 +52,10 @@ function YesNoSelect({
     );
 }
 
-export default function Eligibility() {
+export default function Eligibility({ states }: Props) {
     const [hasFelony, setHasFelony] = useState<'yes' | 'no'>('no');
     const [isCitizen, setIsCitizen] = useState<'yes' | 'no'>('yes');
+    const [homeState, setHomeState] = useState('');
 
     return (
         <>
@@ -96,24 +94,23 @@ export default function Eligibility() {
                                     <Label htmlFor="home_state">
                                         Home state
                                     </Label>
-                                    <Select name="home_state">
-                                        <SelectTrigger
-                                            id="home_state"
-                                            className="w-full"
-                                        >
-                                            <SelectValue placeholder="Select a state" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {US_STATES.map((state) => (
-                                                <SelectItem
-                                                    key={state}
-                                                    value={state}
-                                                >
-                                                    {state}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Combobox
+                                        id="home_state"
+                                        value={homeState}
+                                        onChange={setHomeState}
+                                        placeholder="Select a state"
+                                        searchPlaceholder="Search states…"
+                                        emptyText="No states found."
+                                        options={states.map((state) => ({
+                                            value: state,
+                                            label: state,
+                                        }))}
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="home_state"
+                                        value={homeState}
+                                    />
                                     <InputError message={errors.home_state} />
                                 </div>
 

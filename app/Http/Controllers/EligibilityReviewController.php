@@ -23,18 +23,21 @@ class EligibilityReviewController extends Controller
         Gate::authorize('viewAny', EligibilityAttestation::class);
 
         $status = $request->string('status')->trim()->toString();
+        $search = $request->string('search')->trim()->toString();
 
         $attestations = EligibilityAttestation::query()
             ->with('user')
             ->when($status !== '', fn ($query) => $query->where('status', $status))
-            ->when($status === '', fn ($query) => $query->where('status', EligibilityAttestation::STATUS_FLAGGED_FOR_WAIVER))
+            ->when($search !== '', fn ($query) => $query->whereHas('user', fn ($query) => $query
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")))
             ->orderByDesc('created_at')
             ->paginate(25)
-            ->appends(['status' => $status]);
+            ->appends(['status' => $status, 'search' => $search]);
 
         return Inertia::render('admin/eligibility/index', [
             'attestations' => $attestations,
-            'filters' => ['status' => $status],
+            'filters' => ['status' => $status, 'search' => $search],
         ]);
     }
 
@@ -65,20 +68,30 @@ class EligibilityReviewController extends Controller
     }
 
     /**
-     * Record a coach/admin decision on a flagged attestation.
+     * Record (or change) a coach/admin decision on an attestation. A
+     * reviewer has free rein to set a case to any of the four statuses at
+     * any time, including moving a decided case back to `pending` or
+     * `flagged_for_waiver` to reopen it for review.
      */
     public function decision(Request $request, EligibilityAttestation $eligibilityAttestation): RedirectResponse
     {
         Gate::authorize('review', $eligibilityAttestation);
 
-        abort_unless($eligibilityAttestation->status === EligibilityAttestation::STATUS_FLAGGED_FOR_WAIVER, 409);
-
         $validated = $request->validate([
             'status' => ['required', Rule::in([
+                EligibilityAttestation::STATUS_PENDING,
                 EligibilityAttestation::STATUS_CLEARED,
+                EligibilityAttestation::STATUS_FLAGGED_FOR_WAIVER,
                 EligibilityAttestation::STATUS_NOT_ELIGIBLE,
             ])],
         ]);
+
+        // No-op if the decision doesn't actually change anything — avoids
+        // re-stamping reviewed_by/reviewed_at and re-notifying the agent for
+        // a click that didn't alter the outcome.
+        if ($eligibilityAttestation->status === $validated['status']) {
+            return back();
+        }
 
         $eligibilityAttestation->update([
             'status' => $validated['status'],
@@ -86,7 +99,11 @@ class EligibilityReviewController extends Controller
             'reviewed_at' => now(),
         ]);
 
-        $eligibilityAttestation->user->notify(new EligibilityDecisionNotification($validated['status']));
+        // Only cleared/not_eligible are decisions worth emailing the agent
+        // about — reopening a case for further review isn't an outcome yet.
+        if (! in_array($validated['status'], EligibilityAttestation::UNDER_REVIEW_STATUSES, true)) {
+            $eligibilityAttestation->user->notify(new EligibilityDecisionNotification($validated['status']));
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Decision recorded.')]);
 

@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property int|null $reviewed_by
  * @property Carbon|null $reviewed_at
+ * @property Carbon|null $enrollment_completed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -34,16 +35,30 @@ use Illuminate\Support\Carbon;
     'status',
     'reviewed_by',
     'reviewed_at',
+    'enrollment_completed_at',
 ])]
 class EligibilityAttestation extends Model
 {
     use HasFactory;
+
+    public const STATUS_PENDING = 'pending';
 
     public const STATUS_CLEARED = 'cleared';
 
     public const STATUS_FLAGGED_FOR_WAIVER = 'flagged_for_waiver';
 
     public const STATUS_NOT_ELIGIBLE = 'not_eligible';
+
+    /**
+     * Statuses that mean "not yet decided" — the agent still just sees the
+     * pending-review page for either of these.
+     *
+     * @var list<string>
+     */
+    public const UNDER_REVIEW_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_FLAGGED_FOR_WAIVER,
+    ];
 
     /**
      * @return array<string, string>
@@ -55,6 +70,7 @@ class EligibilityAttestation extends Model
             'has_felony_conviction' => 'boolean',
             'is_us_citizen' => 'boolean',
             'reviewed_at' => 'datetime',
+            'enrollment_completed_at' => 'datetime',
         ];
     }
 

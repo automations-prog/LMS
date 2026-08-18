@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\Age18OrOlder;
+use App\Support\UsStates;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,7 +35,7 @@ class StoreEligibilityAttestationRequest extends FormRequest
     {
         return [
             'date_of_birth' => ['required', 'date', 'before:today', new Age18OrOlder],
-            'home_state' => ['required', 'string', 'size:2'],
+            'home_state' => ['required', 'string', Rule::in(UsStates::ALL)],
             'has_felony_conviction' => ['required', 'boolean'],
             'felony_details' => [Rule::requiredIf($this->boolean('has_felony_conviction')), 'nullable', 'string', 'max:2000'],
             'is_us_citizen' => ['required', 'boolean'],

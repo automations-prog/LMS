@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Course;
+use App\Models\EligibilityAttestation;
+use App\Models\TrainingCompletion;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -17,13 +19,20 @@ class DashboardController extends Controller
      * only ever hold courses.browse, so nothing user-management-related is
      * ever queried or sent for them.
      */
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         if ($request->user()->can('courses.view')) {
             return $this->managementDashboard();
         }
 
-        return $this->agentDashboard();
+        // Newly activated agents must complete the eligibility form before
+        // they can see anything else — even if they navigate straight to
+        // /dashboard instead of following the invite-acceptance redirect.
+        if (! $request->user()->eligibilityAttestation) {
+            return redirect()->route('eligibility.create');
+        }
+
+        return $this->agentDashboard($request);
     }
 
     /**
@@ -45,11 +54,21 @@ class DashboardController extends Controller
             ])
             ->values();
 
-        $coursesByStatus = collect(['published', 'draft'])
+        $eligibilityByStatus = collect([
+            EligibilityAttestation::STATUS_PENDING,
+            EligibilityAttestation::STATUS_FLAGGED_FOR_WAIVER,
+            EligibilityAttestation::STATUS_CLEARED,
+            EligibilityAttestation::STATUS_NOT_ELIGIBLE,
+        ])
             ->map(fn (string $status) => [
                 'key' => $status,
-                'label' => ucfirst($status),
-                'value' => Course::where('status', $status)->count(),
+                'label' => match ($status) {
+                    EligibilityAttestation::STATUS_PENDING => 'Pending',
+                    EligibilityAttestation::STATUS_FLAGGED_FOR_WAIVER => 'Flagged',
+                    EligibilityAttestation::STATUS_CLEARED => 'Eligible',
+                    default => 'Not eligible',
+                },
+                'value' => EligibilityAttestation::where('status', $status)->count(),
             ])
             ->values();
 
@@ -67,13 +86,17 @@ class DashboardController extends Controller
         return Inertia::render('dashboard', [
             'stats' => [
                 'total_users' => User::count(),
-                'total_resources' => Course::count(),
-                'published_resources' => Course::where('status', 'published')->count(),
                 'active_users' => User::where('is_active', true)->count(),
+                'pending_eligibility_reviews' => EligibilityAttestation::whereIn(
+                    'status', EligibilityAttestation::UNDER_REVIEW_STATUSES,
+                )->count(),
+                'pending_training_reviews' => TrainingCompletion::where(
+                    'status', TrainingCompletion::STATUS_PENDING_REVIEW,
+                )->count(),
             ],
             'charts' => [
                 'users_by_role' => $usersByRole,
-                'resources_by_status' => $coursesByStatus,
+                'eligibility_by_status' => $eligibilityByStatus,
                 'signups_per_day' => $signupsPerDay,
             ],
         ]);
@@ -81,10 +104,22 @@ class DashboardController extends Controller
 
     /**
      * The agent dashboard — a plain welcome landing page, no user-management
-     * or resource data of any kind touches this response.
+     * or resource data of any kind touches this response. The one exception
+     * is the agent's own eligibility/enrollment/training status, which the
+     * page uses to decide which onboarding step (if any) to show.
      */
-    private function agentDashboard(): Response
+    private function agentDashboard(Request $request): Response
     {
-        return Inertia::render('dashboard-agent');
+        $attestation = $request->user()->eligibilityAttestation;
+        $training = $request->user()->trainingCompletion;
+
+        return Inertia::render('dashboard-agent', [
+            'eligibilityStatus' => in_array($attestation?->status, EligibilityAttestation::UNDER_REVIEW_STATUSES, true)
+                ? 'under_review'
+                : $attestation?->status,
+            'enrollmentCompleted' => $attestation?->enrollment_completed_at !== null,
+            'trainingStatus' => $training?->status,
+            'trainingNote' => $training?->status === TrainingCompletion::STATUS_REJECTED ? $training->note : null,
+        ]);
     }
 }

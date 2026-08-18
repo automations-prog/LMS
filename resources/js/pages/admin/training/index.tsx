@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import EligibilityReviewController from '@/actions/App/Http/Controllers/EligibilityReviewController';
+import TrainingReviewController from '@/actions/App/Http/Controllers/TrainingReviewController';
 import { DataPagination } from '@/components/data-pagination';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -14,35 +14,27 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { index } from '@/routes/eligibility';
+import { index } from '@/routes/training';
 import type { Paginator } from '@/types';
 
 const STATUS_LABELS: Record<string, string> = {
-    pending: 'Pending',
-    flagged_for_waiver: 'Flagged for waiver',
-    cleared: 'Eligible',
-    not_eligible: 'Not eligible',
+    pending_review: 'Pending review',
+    verified: 'Verified',
+    rejected: 'Rejected',
 };
 
 const STATUS_BADGE_CLASSES: Record<string, string> = {
-    pending:
+    pending_review:
         'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
-    flagged_for_waiver:
-        'border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-    cleared:
+    verified:
         'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-    not_eligible:
+    rejected:
         'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
 };
 
-const STATUS_OPTIONS = [
-    'pending',
-    'flagged_for_waiver',
-    'cleared',
-    'not_eligible',
-];
+const STATUS_OPTIONS = ['pending_review', 'verified', 'rejected'];
 
-type AttestationRow = {
+type CompletionRow = {
     id: number;
     status: string;
     created_at: string;
@@ -55,7 +47,7 @@ type Filters = {
 };
 
 type Props = {
-    attestations: Paginator<AttestationRow>;
+    completions: Paginator<CompletionRow>;
     filters: Filters;
 };
 
@@ -71,7 +63,7 @@ function applyFilters(overrides: Partial<Filters>, filters: Filters) {
     );
 }
 
-export default function EligibilityIndex({ attestations, filters }: Props) {
+export default function TrainingIndex({ completions, filters }: Props) {
     const [search, setSearch] = useState(filters.search);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -99,13 +91,13 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
 
     return (
         <>
-            <Head title="Eligibility review" />
+            <Head title="Training review" />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <Heading
                     variant="small"
-                    title="Eligibility review"
-                    description="Review agent eligibility attestations"
+                    title="Training review"
+                    description="Review agent XCEL training certificates"
                 />
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -159,20 +151,20 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                             </tr>
                         </thead>
                         <tbody>
-                            {attestations.data.map((attestation) => (
+                            {completions.data.map((completion) => (
                                 <tr
-                                    key={attestation.id}
+                                    key={completion.id}
                                     className="border-b border-sidebar-border/70 last:border-0 dark:border-sidebar-border"
                                 >
                                     <td className="px-4 py-3">
-                                        <div>{attestation.user.name}</div>
+                                        <div>{completion.user.name}</div>
                                         <div className="text-xs text-muted-foreground">
-                                            {attestation.user.email}
+                                            {completion.user.email}
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 text-muted-foreground">
                                         {submittedFormatter.format(
-                                            new Date(attestation.created_at),
+                                            new Date(completion.created_at),
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -180,13 +172,13 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                                             variant="outline"
                                             className={
                                                 STATUS_BADGE_CLASSES[
-                                                    attestation.status
+                                                    completion.status
                                                 ]
                                             }
                                         >
                                             {STATUS_LABELS[
-                                                attestation.status
-                                            ] ?? attestation.status}
+                                                completion.status
+                                            ] ?? completion.status}
                                         </Badge>
                                     </td>
                                     <td className="px-4 py-3 text-right">
@@ -196,8 +188,8 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                                             asChild
                                         >
                                             <Link
-                                                href={EligibilityReviewController.show(
-                                                    attestation.id,
+                                                href={TrainingReviewController.show(
+                                                    completion.id,
                                                 )}
                                             >
                                                 Review
@@ -207,13 +199,13 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                                 </tr>
                             ))}
 
-                            {attestations.data.length === 0 && (
+                            {completions.data.length === 0 && (
                                 <tr>
                                     <td
                                         colSpan={4}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
-                                        No attestations found.
+                                        No submissions found.
                                     </td>
                                 </tr>
                             )}
@@ -222,7 +214,7 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
                 </div>
 
                 <DataPagination
-                    paginator={attestations}
+                    paginator={completions}
                     filters={{ status: filters.status, search: filters.search }}
                 />
             </div>
@@ -230,10 +222,10 @@ export default function EligibilityIndex({ attestations, filters }: Props) {
     );
 }
 
-EligibilityIndex.layout = {
+TrainingIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Eligibility review',
+            title: 'Training review',
             href: index(),
         },
     ],

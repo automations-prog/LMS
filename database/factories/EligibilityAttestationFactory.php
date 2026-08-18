@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\EligibilityAttestation;
 use App\Models\User;
+use App\Support\UsStates;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,12 +22,12 @@ class EligibilityAttestationFactory extends Factory
         return [
             'user_id' => User::factory(),
             'date_of_birth' => fake()->dateTimeBetween('-60 years', '-19 years'),
-            'home_state' => fake()->randomElement(['CA', 'TX', 'NY', 'FL', 'WA']),
+            'home_state' => fake()->randomElement(UsStates::ALL),
             'has_felony_conviction' => false,
             'felony_details' => null,
             'is_us_citizen' => true,
             'work_authorization_path' => null,
-            'status' => EligibilityAttestation::STATUS_CLEARED,
+            'status' => EligibilityAttestation::STATUS_PENDING,
             'reviewed_by' => null,
             'reviewed_at' => null,
         ];

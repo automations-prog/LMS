@@ -33,6 +33,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'courses.delete',
             'courses.browse',
             'eligibility.review',
+            'training.review',
         ];
 
         foreach ($permissions as $permission) {
@@ -54,6 +55,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'courses.update',
             'courses.delete',
             'eligibility.review',
+            'training.review',
         ]);
 
         $agent = Role::findOrCreate('agent');
