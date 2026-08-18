@@ -217,7 +217,7 @@ export default function CoursesCreate({ categories, returnTo }: Props) {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-3 rounded-xl border border-sidebar-border/70 p-6 dark:border-sidebar-border">
+                                <div className="flex flex-col gap-2 rounded-xl border border-sidebar-border/70 p-6 dark:border-sidebar-border">
                                     <Button
                                         type="submit"
                                         name="status"
@@ -231,13 +231,17 @@ export default function CoursesCreate({ categories, returnTo }: Props) {
                                         type="submit"
                                         name="status"
                                         value="draft"
-                                        variant="secondary"
+                                        variant="outline"
                                         disabled={processing}
                                     >
                                         {processing && <Spinner />}
                                         Save as draft
                                     </Button>
-                                    <Button variant="outline" asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className="mt-1 text-muted-foreground"
+                                        asChild
+                                    >
                                         <Link href={returnTo}>Cancel</Link>
                                     </Button>
                                 </div>

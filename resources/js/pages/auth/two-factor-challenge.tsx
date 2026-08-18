@@ -10,6 +10,7 @@ import {
     InputOTPSlot,
 } from '@/components/ui/input-otp';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
+import { authButtonClass, authInputClass } from '@/lib/auth-theme';
 import { store } from '@/routes/two-factor/login';
 
 export default function TwoFactorChallenge() {
@@ -70,6 +71,7 @@ export default function TwoFactorChallenge() {
                                         placeholder="Enter recovery code"
                                         autoFocus={showRecoveryInput}
                                         required
+                                        className={authInputClass}
                                     />
                                     <InputError
                                         message={errors.recovery_code}
@@ -106,7 +108,7 @@ export default function TwoFactorChallenge() {
 
                             <Button
                                 type="submit"
-                                className="w-full"
+                                className={`w-full ${authButtonClass}`}
                                 disabled={processing}
                             >
                                 Continue

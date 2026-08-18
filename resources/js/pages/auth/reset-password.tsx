@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    authButtonClass,
+    authInputClass,
+    authLabelClass,
+} from '@/lib/auth-theme';
 import { update } from '@/routes/password';
 
 type Props = {
@@ -43,12 +48,14 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password" className={authLabelClass}>
+                                Password
+                            </Label>
                             <PasswordInput
                                 id="password"
                                 name="password"
                                 autoComplete="new-password"
-                                className="mt-1 block w-full"
+                                className={`mt-1 block w-full ${authInputClass}`}
                                 autoFocus
                                 placeholder="Password"
                                 passwordrules={passwordRules}
@@ -57,14 +64,17 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">
+                            <Label
+                                htmlFor="password_confirmation"
+                                className={authLabelClass}
+                            >
                                 Confirm password
                             </Label>
                             <PasswordInput
                                 id="password_confirmation"
                                 name="password_confirmation"
                                 autoComplete="new-password"
-                                className="mt-1 block w-full"
+                                className={`mt-1 block w-full ${authInputClass}`}
                                 placeholder="Confirm password"
                                 passwordrules={passwordRules}
                             />
@@ -76,7 +86,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
 
                         <Button
                             type="submit"
-                            className="mt-4 w-full"
+                            className={`mt-4 w-full ${authButtonClass}`}
                             disabled={processing}
                             data-test="reset-password-button"
                         >
