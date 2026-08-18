@@ -26,6 +26,10 @@ class ImpersonateController extends Controller
 
         $request->session()->put('impersonator_id', $request->user()->id);
 
+        // Suppresses AppServiceProvider's Login-event listener — this isn't
+        // a genuine login, it shouldn't touch the target's last_login_at.
+        app()->instance('impersonating', true);
+
         Auth::login($user);
 
         $request->session()->regenerate();
@@ -43,6 +47,8 @@ class ImpersonateController extends Controller
         $impersonatorId = $request->session()->pull('impersonator_id');
 
         abort_unless($impersonatorId, 403);
+
+        app()->instance('impersonating', true);
 
         Auth::loginUsingId($impersonatorId);
 

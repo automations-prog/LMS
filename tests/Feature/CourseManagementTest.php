@@ -322,3 +322,83 @@ test('an off-site return_to value is ignored', function () {
         ])
         ->assertRedirect(route('courses.index'));
 });
+
+test('admin can view the categories page', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->get(route('categories.index'))
+        ->assertOk();
+});
+
+test('agent cannot view the categories page', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+
+    $this->actingAs($agent)
+        ->get(route('categories.index'))
+        ->assertForbidden();
+});
+
+test('admin can bulk unpublish resources, leaving drafts untouched', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $published = Course::factory()->create(['status' => 'published']);
+    $otherPublished = Course::factory()->create(['status' => 'published']);
+    $alreadyDraft = Course::factory()->create(['status' => 'draft']);
+
+    $this->actingAs($admin)
+        ->patch(route('courses.bulk-unpublish'), [
+            'course_ids' => [$published->id, $otherPublished->id, $alreadyDraft->id],
+        ])
+        ->assertRedirect();
+
+    expect($published->fresh()->status)->toBe('draft');
+    expect($otherPublished->fresh()->status)->toBe('draft');
+    expect($alreadyDraft->fresh()->status)->toBe('draft');
+});
+
+test('agent cannot bulk unpublish resources', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+
+    $course = Course::factory()->create(['status' => 'published']);
+
+    $this->actingAs($agent)
+        ->patch(route('courses.bulk-unpublish'), ['course_ids' => [$course->id]])
+        ->assertForbidden();
+
+    expect($course->fresh()->status)->toBe('published');
+});
+
+test('admin can bulk delete resources', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $courseOne = Course::factory()->create();
+    $courseTwo = Course::factory()->create();
+
+    $this->actingAs($admin)
+        ->delete(route('courses.bulk-destroy'), [
+            'course_ids' => [$courseOne->id, $courseTwo->id],
+        ])
+        ->assertRedirect();
+
+    expect(Course::find($courseOne->id))->toBeNull();
+    expect(Course::find($courseTwo->id))->toBeNull();
+});
+
+test('agent cannot bulk delete resources', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+
+    $course = Course::factory()->create();
+
+    $this->actingAs($agent)
+        ->delete(route('courses.bulk-destroy'), ['course_ids' => [$course->id]])
+        ->assertForbidden();
+
+    expect(Course::find($course->id))->not->toBeNull();
+});

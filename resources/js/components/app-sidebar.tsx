@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, LayoutGrid, Users } from 'lucide-react';
+import { BookOpen, FolderCog, LayoutGrid, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -13,6 +13,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as categoriesIndex } from '@/routes/categories';
 import { browse as coursesBrowse, index as coursesIndex } from '@/routes/courses';
 import { index as usersIndex } from '@/routes/users';
 import type { Auth, NavItem } from '@/types';
@@ -38,6 +39,15 @@ export function AppSidebar() {
                       title: 'Resources',
                       href: coursesHref,
                       icon: BookOpen,
+                  },
+              ]
+            : []),
+        ...(permissions.includes('courses.view')
+            ? [
+                  {
+                      title: 'Categories',
+                      href: categoriesIndex(),
+                      icon: FolderCog,
                   },
               ]
             : []),

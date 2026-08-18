@@ -243,6 +243,65 @@ class CourseController extends Controller
     }
 
     /**
+     * Unpublish a batch of resources at once.
+     */
+    public function bulkUnpublish(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('courses.update'), 403);
+
+        $validated = $request->validate([
+            'course_ids' => ['required', 'array'],
+            'course_ids.*' => ['integer'],
+        ]);
+
+        $unpublished = Course::whereIn('id', $validated['course_ids'])
+            ->where('status', 'published')
+            ->update(['status' => 'draft']);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => trans_choice(':count resource unpublished.|:count resources unpublished.', $unpublished, ['count' => $unpublished]),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Delete a batch of resources at once.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('courses.delete'), 403);
+
+        $validated = $request->validate([
+            'course_ids' => ['required', 'array'],
+            'course_ids.*' => ['integer'],
+        ]);
+
+        $deleted = 0;
+
+        foreach (Course::whereIn('id', $validated['course_ids'])->get() as $course) {
+            if ($course->thumbnail_path) {
+                Storage::disk('public')->delete($course->thumbnail_path);
+            }
+
+            if ($course->resource_path) {
+                Storage::disk('public')->delete($course->resource_path);
+            }
+
+            $course->delete();
+            $deleted++;
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => trans_choice(':count resource deleted.|:count resources deleted.', $deleted, ['count' => $deleted]),
+        ]);
+
+        return back();
+    }
+
+    /**
      * Generate a unique slug for the given title.
      */
     private function uniqueSlug(string $title, ?int $ignoreId = null): string

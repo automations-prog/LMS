@@ -1,5 +1,14 @@
 import { Form, Head, router, usePage } from '@inertiajs/react';
-import { MoreHorizontal, Plus, Search } from 'lucide-react';
+import {
+    Ban,
+    CircleCheck,
+    MoreHorizontal,
+    Pencil,
+    Plus,
+    Search,
+    Trash2,
+    UserRoundCog,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ImpersonateController from '@/actions/App/Http/Controllers/ImpersonateController';
 import UserController from '@/actions/App/Http/Controllers/UserController';
@@ -9,13 +18,13 @@ import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogClose,
     DialogContent,
     DialogFooter,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     DropdownMenu,
@@ -32,6 +41,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { index } from '@/routes/users';
 import type { Auth, Paginator } from '@/types';
@@ -56,8 +74,18 @@ type UserRow = {
     name: string;
     email: string;
     is_active: boolean;
+    last_login_at: string | null;
     roles: { id: number; name: string }[];
 };
+
+const lastLoginFormatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+});
+
+function formatLastLogin(value: string | null) {
+    return value ? lastLoginFormatter.format(new Date(value)) : 'Never';
+}
 
 type Counts = {
     total: number;
@@ -143,6 +171,38 @@ export default function UsersIndex({
     const [deletingUserId, setDeletingUserId] = useState<number | null>(
         null,
     );
+    const [suspendingUserId, setSuspendingUserId] = useState<number | null>(
+        null,
+    );
+
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [bulkSuspendOpen, setBulkSuspendOpen] = useState(false);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+    function isRowSelectable(user: UserRow) {
+        const canEditRow = assignableRoles.includes(
+            user.roles[0]?.name ?? '',
+        );
+
+        return canEditRow && user.id !== auth.user.id;
+    }
+
+    const selectableIds = users.data.filter(isRowSelectable).map((u) => u.id);
+    const allSelected =
+        selectableIds.length > 0 &&
+        selectableIds.every((id) => selectedIds.includes(id));
+
+    function toggleSelectAll() {
+        setSelectedIds(allSelected ? [] : selectableIds);
+    }
+
+    function toggleSelectOne(id: number) {
+        setSelectedIds((current) =>
+            current.includes(id)
+                ? current.filter((existing) => existing !== id)
+                : [...current, id],
+        );
+    }
 
     const [search, setSearch] = useState(filters.search);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -185,87 +245,96 @@ export default function UsersIndex({
                     />
 
                     {canCreate && (
-                        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                            <DialogTrigger asChild>
+                        <Sheet open={createOpen} onOpenChange={setCreateOpen}>
+                            <SheetTrigger asChild>
                                 <Button>
                                     <Plus className="size-4" />
                                     New user
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogTitle>Add user</DialogTitle>
+                            </SheetTrigger>
+                            <SheetContent
+                                side="right"
+                                className="flex flex-col gap-0 sm:max-w-md"
+                            >
+                                <SheetHeader>
+                                    <SheetTitle>Add user</SheetTitle>
+                                </SheetHeader>
 
                                 <Form
                                     {...UserController.store.form()}
                                     resetOnSuccess
                                     onSuccess={() => setCreateOpen(false)}
-                                    className="space-y-4"
+                                    className="flex flex-1 flex-col overflow-hidden"
                                 >
                                     {({ processing, errors }) => (
                                         <>
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="name">
-                                                    Name
-                                                </Label>
-                                                <Input
-                                                    id="name"
-                                                    name="name"
-                                                    required
-                                                    autoFocus
-                                                    autoComplete="name"
-                                                />
-                                                <InputError
-                                                    message={errors.name}
+                                            <div className="flex-1 space-y-4 overflow-y-auto px-4">
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="name">
+                                                        Name
+                                                    </Label>
+                                                    <Input
+                                                        id="name"
+                                                        name="name"
+                                                        required
+                                                        autoFocus
+                                                        autoComplete="name"
+                                                    />
+                                                    <InputError
+                                                        message={errors.name}
+                                                    />
+                                                </div>
+
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="email">
+                                                        Email address
+                                                    </Label>
+                                                    <Input
+                                                        id="email"
+                                                        type="email"
+                                                        name="email"
+                                                        required
+                                                        autoComplete="email"
+                                                    />
+                                                    <InputError
+                                                        message={errors.email}
+                                                    />
+                                                </div>
+
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="password">
+                                                        Password
+                                                    </Label>
+                                                    <PasswordInput
+                                                        id="password"
+                                                        name="password"
+                                                        required
+                                                        autoComplete="new-password"
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            errors.password
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <RoleSelect
+                                                    assignableRoles={
+                                                        assignableRoles
+                                                    }
+                                                    defaultValue={
+                                                        assignableRoles[0]
+                                                    }
+                                                    error={errors.role}
                                                 />
                                             </div>
 
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="email">
-                                                    Email address
-                                                </Label>
-                                                <Input
-                                                    id="email"
-                                                    type="email"
-                                                    name="email"
-                                                    required
-                                                    autoComplete="email"
-                                                />
-                                                <InputError
-                                                    message={errors.email}
-                                                />
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="password">
-                                                    Password
-                                                </Label>
-                                                <PasswordInput
-                                                    id="password"
-                                                    name="password"
-                                                    required
-                                                    autoComplete="new-password"
-                                                />
-                                                <InputError
-                                                    message={errors.password}
-                                                />
-                                            </div>
-
-                                            <RoleSelect
-                                                assignableRoles={
-                                                    assignableRoles
-                                                }
-                                                defaultValue={
-                                                    assignableRoles[0]
-                                                }
-                                                error={errors.role}
-                                            />
-
-                                            <DialogFooter className="gap-2 pt-2">
-                                                <DialogClose asChild>
+                                            <SheetFooter className="flex-row justify-end gap-2 border-t">
+                                                <SheetClose asChild>
                                                     <Button variant="secondary">
                                                         Cancel
                                                     </Button>
-                                                </DialogClose>
+                                                </SheetClose>
                                                 <Button
                                                     type="submit"
                                                     disabled={processing}
@@ -275,12 +344,12 @@ export default function UsersIndex({
                                                     )}
                                                     Create user
                                                 </Button>
-                                            </DialogFooter>
+                                            </SheetFooter>
                                         </>
                                     )}
                                 </Form>
-                            </DialogContent>
-                        </Dialog>
+                            </SheetContent>
+                        </Sheet>
                     )}
                 </div>
 
@@ -336,10 +405,144 @@ export default function UsersIndex({
                     </Select>
                 </div>
 
+                {selectedIds.length > 0 && (
+                    <div className="flex items-center justify-between rounded-xl border border-sidebar-border/70 bg-muted/50 px-4 py-2 dark:border-sidebar-border">
+                        <p className="text-sm text-muted-foreground">
+                            {selectedIds.length} selected
+                        </p>
+
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setBulkSuspendOpen(true)}
+                            >
+                                <Ban />
+                                Suspend
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setBulkDeleteOpen(true)}
+                            >
+                                <Trash2 />
+                                Delete
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                <Dialog
+                    open={bulkSuspendOpen}
+                    onOpenChange={setBulkSuspendOpen}
+                >
+                    <DialogContent>
+                        <DialogTitle>
+                            Suspend {selectedIds.length} user
+                            {selectedIds.length === 1 ? '' : 's'}?
+                        </DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                            They won&apos;t be able to log in until
+                            reactivated.
+                        </p>
+
+                        <Form
+                            {...UserController.bulkSuspend.form()}
+                            onSuccess={() => {
+                                setBulkSuspendOpen(false);
+                                setSelectedIds([]);
+                            }}
+                        >
+                            {({ processing }) => (
+                                <>
+                                    {selectedIds.map((id) => (
+                                        <input
+                                            key={id}
+                                            type="hidden"
+                                            name="user_ids[]"
+                                            value={id}
+                                        />
+                                    ))}
+                                    <DialogFooter className="gap-2">
+                                        <DialogClose asChild>
+                                            <Button variant="secondary">
+                                                Cancel
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            disabled={processing}
+                                        >
+                                            {processing && <Spinner />}
+                                            Suspend
+                                        </Button>
+                                    </DialogFooter>
+                                </>
+                            )}
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                    <DialogContent>
+                        <DialogTitle>
+                            Delete {selectedIds.length} user
+                            {selectedIds.length === 1 ? '' : 's'}?
+                        </DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                            This cannot be undone.
+                        </p>
+
+                        <Form
+                            {...UserController.bulkDestroy.form()}
+                            onSuccess={() => {
+                                setBulkDeleteOpen(false);
+                                setSelectedIds([]);
+                            }}
+                        >
+                            {({ processing }) => (
+                                <>
+                                    {selectedIds.map((id) => (
+                                        <input
+                                            key={id}
+                                            type="hidden"
+                                            name="user_ids[]"
+                                            value={id}
+                                        />
+                                    ))}
+                                    <DialogFooter className="gap-2">
+                                        <DialogClose asChild>
+                                            <Button variant="secondary">
+                                                Cancel
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            variant="destructive"
+                                            disabled={processing}
+                                        >
+                                            {processing && <Spinner />}
+                                            Delete
+                                        </Button>
+                                    </DialogFooter>
+                                </>
+                            )}
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+
                 <div className="overflow-x-auto rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-sidebar-border/70 text-left text-muted-foreground dark:border-sidebar-border">
+                                <th className="w-10 px-4 py-3">
+                                    <Checkbox
+                                        checked={allSelected}
+                                        disabled={selectableIds.length === 0}
+                                        onCheckedChange={toggleSelectAll}
+                                        aria-label="Select all users"
+                                    />
+                                </th>
                                 <th className="px-4 py-3 font-medium">
                                     Name
                                 </th>
@@ -351,6 +554,9 @@ export default function UsersIndex({
                                 </th>
                                 <th className="px-4 py-3 font-medium">
                                     Status
+                                </th>
+                                <th className="px-4 py-3 font-medium">
+                                    Last login
                                 </th>
                                 <th className="px-4 py-3 font-medium">
                                     <span className="sr-only">Actions</span>
@@ -373,11 +579,25 @@ export default function UsersIndex({
                                     canToggleStatus ||
                                     canDelete;
 
+                                const selectable = isRowSelectable(user);
+
                                 return (
                                     <tr
                                         key={user.id}
                                         className="border-b border-sidebar-border/70 last:border-0 dark:border-sidebar-border"
                                     >
+                                        <td className="px-4 py-3">
+                                            <Checkbox
+                                                checked={selectedIds.includes(
+                                                    user.id,
+                                                )}
+                                                disabled={!selectable}
+                                                onCheckedChange={() =>
+                                                    toggleSelectOne(user.id)
+                                                }
+                                                aria-label={`Select ${user.name}`}
+                                            />
+                                        </td>
                                         <td className="px-4 py-3">
                                             {user.name}
                                         </td>
@@ -417,6 +637,11 @@ export default function UsersIndex({
                                                     : 'Inactive'}
                                             </Badge>
                                         </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
+                                            {formatLastLogin(
+                                                user.last_login_at,
+                                            )}
+                                        </td>
                                         <td className="px-4 py-3 text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -444,6 +669,7 @@ export default function UsersIndex({
                                                                 )
                                                             }
                                                         >
+                                                            <UserRoundCog />
                                                             Impersonate
                                                         </DropdownMenuItem>
                                                     )}
@@ -456,24 +682,40 @@ export default function UsersIndex({
                                                                 );
                                                             }}
                                                         >
+                                                            <Pencil />
                                                             Edit
                                                         </DropdownMenuItem>
                                                     )}
-                                                    {canToggleStatus && (
-                                                        <DropdownMenuItem
-                                                            onSelect={() =>
-                                                                router.patch(
-                                                                    UserController.updateStatus.url(
+                                                    {canToggleStatus &&
+                                                        (user.is_active ? (
+                                                            <DropdownMenuItem
+                                                                variant="destructive"
+                                                                onSelect={(
+                                                                    e,
+                                                                ) => {
+                                                                    e.preventDefault();
+                                                                    setSuspendingUserId(
                                                                         user.id,
-                                                                    ),
-                                                                )
-                                                            }
-                                                        >
-                                                            {user.is_active
-                                                                ? 'Suspend'
-                                                                : 'Activate'}
-                                                        </DropdownMenuItem>
-                                                    )}
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <Ban />
+                                                                Suspend
+                                                            </DropdownMenuItem>
+                                                        ) : (
+                                                            <DropdownMenuItem
+                                                                onSelect={() =>
+                                                                    router.patch(
+                                                                        UserController.updateStatus.url(
+                                                                            user.id,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                            >
+                                                                <CircleCheck />
+                                                                Activate
+                                                            </DropdownMenuItem>
+                                                        ))}
                                                     {canDelete && (
                                                         <DropdownMenuItem
                                                             variant="destructive"
@@ -484,13 +726,14 @@ export default function UsersIndex({
                                                                 );
                                                             }}
                                                         >
+                                                            <Trash2 />
                                                             Delete
                                                         </DropdownMenuItem>
                                                     )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
 
-                                            <Dialog
+                                            <Sheet
                                                 open={
                                                     editingUserId === user.id
                                                 }
@@ -502,10 +745,15 @@ export default function UsersIndex({
                                                     )
                                                 }
                                             >
-                                                <DialogContent>
-                                                    <DialogTitle>
-                                                        Edit {user.name}
-                                                    </DialogTitle>
+                                                <SheetContent
+                                                    side="right"
+                                                    className="flex flex-col gap-0 sm:max-w-md"
+                                                >
+                                                    <SheetHeader>
+                                                        <SheetTitle>
+                                                            Edit {user.name}
+                                                        </SheetTitle>
+                                                    </SheetHeader>
 
                                                     <Form
                                                         {...UserController.update.form(
@@ -516,97 +764,99 @@ export default function UsersIndex({
                                                                 null,
                                                             )
                                                         }
-                                                        className="space-y-4"
+                                                        className="flex flex-1 flex-col overflow-hidden"
                                                     >
                                                         {({
                                                             processing,
                                                             errors,
                                                         }) => (
                                                             <>
-                                                                <div className="grid gap-2">
-                                                                    <Label htmlFor="name">
-                                                                        Name
-                                                                    </Label>
-                                                                    <Input
-                                                                        id="name"
-                                                                        name="name"
-                                                                        required
-                                                                        autoFocus
-                                                                        autoComplete="name"
+                                                                <div className="flex-1 space-y-4 overflow-y-auto px-4">
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="name">
+                                                                            Name
+                                                                        </Label>
+                                                                        <Input
+                                                                            id="name"
+                                                                            name="name"
+                                                                            required
+                                                                            autoFocus
+                                                                            autoComplete="name"
+                                                                            defaultValue={
+                                                                                user.name
+                                                                            }
+                                                                        />
+                                                                        <InputError
+                                                                            message={
+                                                                                errors.name
+                                                                            }
+                                                                        />
+                                                                    </div>
+
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="email">
+                                                                            Email
+                                                                            address
+                                                                        </Label>
+                                                                        <Input
+                                                                            id="email"
+                                                                            type="email"
+                                                                            name="email"
+                                                                            required
+                                                                            autoComplete="email"
+                                                                            defaultValue={
+                                                                                user.email
+                                                                            }
+                                                                        />
+                                                                        <InputError
+                                                                            message={
+                                                                                errors.email
+                                                                            }
+                                                                        />
+                                                                    </div>
+
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="password">
+                                                                            New
+                                                                            password
+                                                                        </Label>
+                                                                        <PasswordInput
+                                                                            id="password"
+                                                                            name="password"
+                                                                            autoComplete="new-password"
+                                                                            placeholder="Leave blank to keep current"
+                                                                        />
+                                                                        <InputError
+                                                                            message={
+                                                                                errors.password
+                                                                            }
+                                                                        />
+                                                                    </div>
+
+                                                                    <RoleSelect
+                                                                        assignableRoles={
+                                                                            assignableRoles
+                                                                        }
                                                                         defaultValue={
-                                                                            user.name
+                                                                            user
+                                                                                .roles[0]
+                                                                                ?.name ??
+                                                                            assignableRoles[0]
                                                                         }
-                                                                    />
-                                                                    <InputError
-                                                                        message={
-                                                                            errors.name
-                                                                        }
-                                                                    />
-                                                                </div>
-
-                                                                <div className="grid gap-2">
-                                                                    <Label htmlFor="email">
-                                                                        Email
-                                                                        address
-                                                                    </Label>
-                                                                    <Input
-                                                                        id="email"
-                                                                        type="email"
-                                                                        name="email"
-                                                                        required
-                                                                        autoComplete="email"
-                                                                        defaultValue={
-                                                                            user.email
-                                                                        }
-                                                                    />
-                                                                    <InputError
-                                                                        message={
-                                                                            errors.email
+                                                                        error={
+                                                                            errors.role
                                                                         }
                                                                     />
                                                                 </div>
 
-                                                                <div className="grid gap-2">
-                                                                    <Label htmlFor="password">
-                                                                        New
-                                                                        password
-                                                                    </Label>
-                                                                    <PasswordInput
-                                                                        id="password"
-                                                                        name="password"
-                                                                        autoComplete="new-password"
-                                                                        placeholder="Leave blank to keep current"
-                                                                    />
-                                                                    <InputError
-                                                                        message={
-                                                                            errors.password
-                                                                        }
-                                                                    />
-                                                                </div>
-
-                                                                <RoleSelect
-                                                                    assignableRoles={
-                                                                        assignableRoles
-                                                                    }
-                                                                    defaultValue={
-                                                                        user
-                                                                            .roles[0]
-                                                                            ?.name ??
-                                                                        assignableRoles[0]
-                                                                    }
-                                                                    error={
-                                                                        errors.role
-                                                                    }
-                                                                />
-
-                                                                <DialogFooter className="gap-2 pt-2">
-                                                                    <DialogClose
+                                                                <SheetFooter className="flex-row justify-end gap-2 border-t">
+                                                                    <SheetClose
                                                                         asChild
                                                                     >
                                                                         <Button variant="secondary">
                                                                             Cancel
                                                                         </Button>
-                                                                    </DialogClose>
+                                                                    </SheetClose>
                                                                     <Button
                                                                         type="submit"
                                                                         disabled={
@@ -619,8 +869,69 @@ export default function UsersIndex({
                                                                         Save
                                                                         changes
                                                                     </Button>
-                                                                </DialogFooter>
+                                                                </SheetFooter>
                                                             </>
+                                                        )}
+                                                    </Form>
+                                                </SheetContent>
+                                            </Sheet>
+
+                                            <Dialog
+                                                open={
+                                                    suspendingUserId ===
+                                                    user.id
+                                                }
+                                                onOpenChange={(open) =>
+                                                    setSuspendingUserId(
+                                                        open
+                                                            ? user.id
+                                                            : null,
+                                                    )
+                                                }
+                                            >
+                                                <DialogContent>
+                                                    <DialogTitle>
+                                                        Suspend {user.name}?
+                                                    </DialogTitle>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        They won&apos;t be
+                                                        able to log in until
+                                                        reactivated.
+                                                    </p>
+
+                                                    <Form
+                                                        {...UserController.updateStatus.form(
+                                                            user.id,
+                                                        )}
+                                                        onSuccess={() =>
+                                                            setSuspendingUserId(
+                                                                null,
+                                                            )
+                                                        }
+                                                    >
+                                                        {({
+                                                            processing,
+                                                        }) => (
+                                                            <DialogFooter className="gap-2">
+                                                                <DialogClose
+                                                                    asChild
+                                                                >
+                                                                    <Button variant="secondary">
+                                                                        Cancel
+                                                                    </Button>
+                                                                </DialogClose>
+                                                                <Button
+                                                                    type="submit"
+                                                                    disabled={
+                                                                        processing
+                                                                    }
+                                                                >
+                                                                    {processing && (
+                                                                        <Spinner />
+                                                                    )}
+                                                                    Suspend
+                                                                </Button>
+                                                            </DialogFooter>
                                                         )}
                                                     </Form>
                                                 </DialogContent>
@@ -691,7 +1002,7 @@ export default function UsersIndex({
                             {users.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={5}
+                                        colSpan={7}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
                                         No users found.

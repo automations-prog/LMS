@@ -157,4 +157,83 @@ class UserController extends Controller
 
         return back();
     }
+
+    /**
+     * Suspend a batch of users at once.
+     */
+    public function bulkSuspend(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('users.update'), 403);
+
+        $validated = $request->validate([
+            'user_ids' => ['required', 'array'],
+            'user_ids.*' => ['integer'],
+        ]);
+
+        $suspended = 0;
+
+        foreach (User::whereIn('id', $validated['user_ids'])->get() as $user) {
+            // Same non-negotiable guards as the single-user action: skip
+            // rather than fail the whole batch over one bad target.
+            if ($request->user()->id === $user->id) {
+                continue;
+            }
+
+            if (! Gate::allows('update', $user)) {
+                continue;
+            }
+
+            $user->update(['is_active' => false]);
+            $suspended++;
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => trans_choice(':count user suspended.|:count users suspended.', $suspended, ['count' => $suspended]),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Delete a batch of users at once.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('users.delete'), 403);
+
+        $validated = $request->validate([
+            'user_ids' => ['required', 'array'],
+            'user_ids.*' => ['integer'],
+        ]);
+
+        $deleted = 0;
+
+        foreach (User::whereIn('id', $validated['user_ids'])->get() as $user) {
+            if ($request->user()->id === $user->id) {
+                continue;
+            }
+
+            if (! Gate::allows('delete', $user)) {
+                continue;
+            }
+
+            // Recomputed on every iteration so deleting several super-admins
+            // in one batch can't slip past this by all reading the same
+            // stale count before any of them are actually removed.
+            if ($user->hasRole('super-admin') && User::role('super-admin')->count() <= 1) {
+                continue;
+            }
+
+            $user->delete();
+            $deleted++;
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => trans_choice(':count user deleted.|:count users deleted.', $deleted, ['count' => $deleted]),
+        ]);
+
+        return back();
+    }
 }

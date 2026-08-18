@@ -1,27 +1,27 @@
 import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import {
+    Ban,
     ExternalLink,
     FileText,
     MoreHorizontal,
     Plus,
     Search,
-    Settings,
+    Trash2,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import CategoryController from '@/actions/App/Http/Controllers/CategoryController';
 import CourseController from '@/actions/App/Http/Controllers/CourseController';
 import { DataPagination } from '@/components/data-pagination';
 import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Combobox } from '@/components/ui/combobox';
 import {
     Dialog,
     DialogClose,
     DialogContent,
     DialogFooter,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     DropdownMenu,
@@ -30,7 +30,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -97,149 +96,6 @@ function applyFilters(overrides: Partial<Filters>, filters: Filters) {
     );
 }
 
-function ManageCategoriesDialog({ categories }: { categories: Category[] }) {
-    const [open, setOpen] = useState(false);
-    const [renamingId, setRenamingId] = useState<number | null>(null);
-
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline">
-                    <Settings className="size-4" />
-                    Manage categories
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogTitle>Manage categories</DialogTitle>
-
-                <div className="space-y-2">
-                    {categories.map((category) =>
-                        renamingId === category.id ? (
-                            <Form
-                                key={category.id}
-                                {...CategoryController.update.form(
-                                    category.id,
-                                )}
-                                onSuccess={() => setRenamingId(null)}
-                                className="flex items-center gap-2"
-                            >
-                                {({ processing, errors }) => (
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <Input
-                                                name="name"
-                                                required
-                                                autoFocus
-                                                defaultValue={category.name}
-                                            />
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                disabled={processing}
-                                            >
-                                                {processing && <Spinner />}
-                                                Save
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                size="sm"
-                                                onClick={() =>
-                                                    setRenamingId(null)
-                                                }
-                                            >
-                                                Cancel
-                                            </Button>
-                                        </div>
-                                        <InputError message={errors.name} />
-                                    </div>
-                                )}
-                            </Form>
-                        ) : (
-                            <div
-                                key={category.id}
-                                className="flex items-center justify-between rounded-md border border-sidebar-border/70 px-3 py-2 dark:border-sidebar-border"
-                            >
-                                <span className="text-sm">
-                                    {category.name}
-                                </span>
-                                <div className="flex gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                            setRenamingId(category.id)
-                                        }
-                                    >
-                                        Rename
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-destructive"
-                                        onClick={() => {
-                                            if (
-                                                confirm(
-                                                    `Delete "${category.name}"? This only works if no resources use it.`,
-                                                )
-                                            ) {
-                                                router.delete(
-                                                    CategoryController.destroy.url(
-                                                        category.id,
-                                                    ),
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        Delete
-                                    </Button>
-                                </div>
-                            </div>
-                        ),
-                    )}
-
-                    {categories.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                            No categories yet.
-                        </p>
-                    )}
-                </div>
-
-                <Form
-                    {...CategoryController.store.form()}
-                    resetOnSuccess
-                    className="flex items-start gap-2 border-t border-sidebar-border/70 pt-4 dark:border-sidebar-border"
-                >
-                    {({ processing, errors }) => (
-                        <>
-                            <div className="flex-1">
-                                <Input
-                                    name="name"
-                                    placeholder="New category name"
-                                    required
-                                />
-                                <InputError message={errors.name} />
-                            </div>
-                            <Button type="submit" disabled={processing}>
-                                {processing && <Spinner />}
-                                Add
-                            </Button>
-                        </>
-                    )}
-                </Form>
-
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="secondary">Close</Button>
-                    </DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 export default function CoursesIndex({
     courses,
     categories,
@@ -254,6 +110,27 @@ export default function CoursesIndex({
     const [deletingCourseId, setDeletingCourseId] = useState<number | null>(
         null,
     );
+
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [bulkUnpublishOpen, setBulkUnpublishOpen] = useState(false);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+    const selectableIds = courses.data.map((c) => c.id);
+    const allSelected =
+        selectableIds.length > 0 &&
+        selectableIds.every((id) => selectedIds.includes(id));
+
+    function toggleSelectAll() {
+        setSelectedIds(allSelected ? [] : selectableIds);
+    }
+
+    function toggleSelectOne(id: number) {
+        setSelectedIds((current) =>
+            current.includes(id)
+                ? current.filter((existing) => existing !== id)
+                : [...current, id],
+        );
+    }
 
     const [search, setSearch] = useState(filters.search);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -296,9 +173,6 @@ export default function CoursesIndex({
                     />
 
                     <div className="flex gap-2">
-                        {canUpdate && (
-                            <ManageCategoriesDialog categories={categories} />
-                        )}
                         {canCreate && (
                             <Button asChild>
                                 <Link href={create()}>
@@ -339,34 +213,28 @@ export default function CoursesIndex({
                         />
                     </div>
 
-                    <Select
+                    <Combobox
+                        className="w-44"
                         value={
                             filters.category === '' ? 'all' : filters.category
                         }
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                             applyFilters(
                                 { category: value === 'all' ? '' : value },
                                 filters,
                             )
                         }
-                    >
-                        <SelectTrigger className="w-44">
-                            <SelectValue placeholder="All categories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">
-                                All categories
-                            </SelectItem>
-                            {categories.map((category) => (
-                                <SelectItem
-                                    key={category.id}
-                                    value={String(category.id)}
-                                >
-                                    {category.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                        placeholder="All categories"
+                        searchPlaceholder="Search categories…"
+                        emptyText="No categories found."
+                        options={[
+                            { value: 'all', label: 'All categories' },
+                            ...categories.map((category) => ({
+                                value: String(category.id),
+                                label: category.name,
+                            })),
+                        ]}
+                    />
 
                     <Select
                         value={filters.status === '' ? 'all' : filters.status}
@@ -390,10 +258,144 @@ export default function CoursesIndex({
                     </Select>
                 </div>
 
+                {selectedIds.length > 0 && (
+                    <div className="flex items-center justify-between rounded-xl border border-sidebar-border/70 bg-muted/50 px-4 py-2 dark:border-sidebar-border">
+                        <p className="text-sm text-muted-foreground">
+                            {selectedIds.length} selected
+                        </p>
+
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setBulkUnpublishOpen(true)}
+                            >
+                                <Ban />
+                                Unpublish
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setBulkDeleteOpen(true)}
+                            >
+                                <Trash2 />
+                                Delete
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                <Dialog
+                    open={bulkUnpublishOpen}
+                    onOpenChange={setBulkUnpublishOpen}
+                >
+                    <DialogContent>
+                        <DialogTitle>
+                            Unpublish {selectedIds.length} resource
+                            {selectedIds.length === 1 ? '' : 's'}?
+                        </DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                            Already-draft resources in the selection are left
+                            as-is.
+                        </p>
+
+                        <Form
+                            {...CourseController.bulkUnpublish.form()}
+                            onSuccess={() => {
+                                setBulkUnpublishOpen(false);
+                                setSelectedIds([]);
+                            }}
+                        >
+                            {({ processing }) => (
+                                <>
+                                    {selectedIds.map((id) => (
+                                        <input
+                                            key={id}
+                                            type="hidden"
+                                            name="course_ids[]"
+                                            value={id}
+                                        />
+                                    ))}
+                                    <DialogFooter className="gap-2">
+                                        <DialogClose asChild>
+                                            <Button variant="secondary">
+                                                Cancel
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            disabled={processing}
+                                        >
+                                            {processing && <Spinner />}
+                                            Unpublish
+                                        </Button>
+                                    </DialogFooter>
+                                </>
+                            )}
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                    <DialogContent>
+                        <DialogTitle>
+                            Delete {selectedIds.length} resource
+                            {selectedIds.length === 1 ? '' : 's'}?
+                        </DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                            This cannot be undone.
+                        </p>
+
+                        <Form
+                            {...CourseController.bulkDestroy.form()}
+                            onSuccess={() => {
+                                setBulkDeleteOpen(false);
+                                setSelectedIds([]);
+                            }}
+                        >
+                            {({ processing }) => (
+                                <>
+                                    {selectedIds.map((id) => (
+                                        <input
+                                            key={id}
+                                            type="hidden"
+                                            name="course_ids[]"
+                                            value={id}
+                                        />
+                                    ))}
+                                    <DialogFooter className="gap-2">
+                                        <DialogClose asChild>
+                                            <Button variant="secondary">
+                                                Cancel
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            variant="destructive"
+                                            disabled={processing}
+                                        >
+                                            {processing && <Spinner />}
+                                            Delete
+                                        </Button>
+                                    </DialogFooter>
+                                </>
+                            )}
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+
                 <div className="overflow-x-auto rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-sidebar-border/70 text-left text-muted-foreground dark:border-sidebar-border">
+                                <th className="w-10 px-4 py-3">
+                                    <Checkbox
+                                        checked={allSelected}
+                                        disabled={selectableIds.length === 0}
+                                        onCheckedChange={toggleSelectAll}
+                                        aria-label="Select all resources"
+                                    />
+                                </th>
                                 <th className="px-4 py-3 font-medium">
                                     Title
                                 </th>
@@ -420,6 +422,17 @@ export default function CoursesIndex({
                                     key={course.id}
                                     className="border-b border-sidebar-border/70 last:border-0 dark:border-sidebar-border"
                                 >
+                                    <td className="px-4 py-3">
+                                        <Checkbox
+                                            checked={selectedIds.includes(
+                                                course.id,
+                                            )}
+                                            onCheckedChange={() =>
+                                                toggleSelectOne(course.id)
+                                            }
+                                            aria-label={`Select ${course.title}`}
+                                        />
+                                    </td>
                                     <td className="px-4 py-3">
                                         {course.title}
                                     </td>
@@ -586,7 +599,7 @@ export default function CoursesIndex({
                             {courses.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={6}
+                                        colSpan={7}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
                                         No resources found.

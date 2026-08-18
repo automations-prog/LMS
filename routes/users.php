@@ -11,6 +11,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('users/{user}/status', [UserController::class, 'updateStatus'])->name('users.update-status');
     Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
+    Route::post('users/bulk-suspend', [UserController::class, 'bulkSuspend'])->name('users.bulk-suspend');
+    Route::post('users/bulk-destroy', [UserController::class, 'bulkDestroy'])->name('users.bulk-destroy');
+
     Route::post('users/{user}/impersonate', [ImpersonateController::class, 'store'])->name('users.impersonate');
 });
 

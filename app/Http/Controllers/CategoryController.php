@@ -7,9 +7,42 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class CategoryController extends Controller
 {
+    /**
+     * Display the category management page.
+     */
+    public function index(Request $request): Response
+    {
+        abort_unless($request->user()->can('courses.view'), 403);
+
+        $perPage = $this->perPage($request);
+
+        $search = $request->string('search')->trim()->toString();
+
+        $categories = Category::withCount('courses')
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
+            ->orderBy('name')
+            ->paginate($perPage, ['id', 'name'])
+            // Not ->withQueryString(): see the identical note in
+            // UserController::index() — it would silently drop the
+            // empty-string `search` filter from every pagination link.
+            ->appends([
+                'search' => $search,
+                'per_page' => $perPage,
+            ]);
+
+        return Inertia::render('courses/categories', [
+            'categories' => $categories,
+            'filters' => [
+                'search' => $search,
+                'per_page' => $perPage,
+            ],
+        ]);
+    }
+
     /**
      * Store a newly created category.
      */
