@@ -29,6 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { brandButtonClass } from '@/lib/brand-theme';
 import { index as categoriesIndex } from '@/routes/categories';
 import { index as coursesIndex } from '@/routes/courses';
 import type { Paginator } from '@/types';
@@ -108,7 +109,7 @@ export default function CoursesCategories({ categories, filters }: Props) {
                             onOpenChange={setCreateOpen}
                         >
                             <DialogTrigger asChild>
-                                <Button>
+                                <Button className={brandButtonClass}>
                                     <Plus className="size-4" />
                                     New category
                                 </Button>
@@ -147,6 +148,9 @@ export default function CoursesCategories({ categories, filters }: Props) {
                                                 </DialogClose>
                                                 <Button
                                                     type="submit"
+                                                    className={
+                                                        brandButtonClass
+                                                    }
                                                     disabled={processing}
                                                 >
                                                     {processing && (
@@ -309,6 +313,9 @@ export default function CoursesCategories({ categories, filters }: Props) {
                                                                 </DialogClose>
                                                                 <Button
                                                                     type="submit"
+                                                                    className={
+                                                                        brandButtonClass
+                                                                    }
                                                                     disabled={
                                                                         processing
                                                                     }

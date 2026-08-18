@@ -11,7 +11,7 @@ import {
     authInputClass,
     authLabelClass,
     authLinkClass,
-} from '@/lib/auth-theme';
+} from '@/lib/brand-theme';
 import { login } from '@/routes';
 import { email } from '@/routes/password';
 

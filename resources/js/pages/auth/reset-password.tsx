@@ -9,7 +9,7 @@ import {
     authButtonClass,
     authInputClass,
     authLabelClass,
-} from '@/lib/auth-theme';
+} from '@/lib/brand-theme';
 import { update } from '@/routes/password';
 
 type Props = {

@@ -38,6 +38,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { brandButtonClass } from '@/lib/brand-theme';
 import { create, edit, index } from '@/routes/courses';
 import type { Auth, Paginator } from '@/types';
 
@@ -174,7 +175,7 @@ export default function CoursesIndex({
 
                     <div className="flex gap-2">
                         {canCreate && (
-                            <Button asChild>
+                            <Button asChild className={brandButtonClass}>
                                 <Link href={create()}>
                                     <Plus className="size-4" />
                                     New resource

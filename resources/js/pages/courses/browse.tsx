@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { ExternalLink, FileText, Search } from 'lucide-react';
+import { Clock, ExternalLink, FileText, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    brandButtonClass,
+    resourceBadgeClass,
+    resourceCardClass,
+    resourceInputClass,
+} from '@/lib/brand-theme';
 import { browse } from '@/routes/courses';
 
 type Category = {
@@ -33,6 +39,8 @@ type CourseCard = {
     description: string;
     category: Category | null;
     due_days: number | null;
+    due_in_days: number | null;
+    progress_percent: number | null;
     resource_type: 'pdf' | 'link';
     resource_url: string | null;
     thumbnail_url: string | null;
@@ -93,7 +101,7 @@ export default function CoursesBrowse({ courses, categories, filters }: Props) {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search resources..."
-                            className="pl-9"
+                            className={`pl-9 ${resourceInputClass}`}
                         />
                     </div>
 
@@ -108,7 +116,7 @@ export default function CoursesBrowse({ courses, categories, filters }: Props) {
                             )
                         }
                     >
-                        <SelectTrigger className="w-44">
+                        <SelectTrigger className={`w-44 ${resourceInputClass}`}>
                             <SelectValue placeholder="All categories" />
                         </SelectTrigger>
                         <SelectContent>
@@ -132,49 +140,78 @@ export default function CoursesBrowse({ courses, categories, filters }: Props) {
                         No resources available yet.
                     </p>
                 ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {courses.map((course) => (
-                            <Card key={course.id} className="overflow-hidden">
+                            <Card
+                                key={course.id}
+                                className={`gap-0 py-0 ${resourceCardClass}`}
+                            >
                                 {course.thumbnail_url ? (
                                     <img
                                         src={course.thumbnail_url}
                                         alt=""
-                                        className="h-36 w-full object-cover"
+                                        className="h-24 w-full object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-36 w-full items-center justify-center bg-muted text-muted-foreground">
-                                        <FileText className="size-8" />
+                                    <div className="flex h-24 w-full items-center justify-center bg-muted text-muted-foreground">
+                                        <FileText className="size-6" />
                                     </div>
                                 )}
 
-                                <CardHeader>
+                                <CardHeader className="gap-1 px-4 pt-3 pb-0">
                                     <div className="flex items-center justify-between gap-2">
-                                        <CardTitle className="line-clamp-1">
+                                        <CardTitle className="line-clamp-1 text-sm">
                                             {course.title}
                                         </CardTitle>
                                         {course.category && (
-                                            <Badge variant="secondary">
+                                            <Badge
+                                                className={`shrink-0 text-xs ${resourceBadgeClass}`}
+                                            >
                                                 {course.category.name}
                                             </Badge>
                                         )}
                                     </div>
-                                    <CardDescription className="line-clamp-2">
+                                    <CardDescription className="line-clamp-1 text-xs">
                                         {course.description}
                                     </CardDescription>
                                 </CardHeader>
 
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground">
-                                        {course.due_days
-                                            ? `Complete within ${course.due_days} days`
-                                            : 'No due date'}
-                                    </p>
+                                <CardContent className="px-4 py-2">
+                                    {course.due_days &&
+                                    course.progress_percent !== null ? (
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                                                <div
+                                                    className="h-full rounded-full"
+                                                    style={{
+                                                        width: `${course.progress_percent}%`,
+                                                        background:
+                                                            'linear-gradient(90deg, #473364, #f598ff)',
+                                                    }}
+                                                />
+                                            </div>
+                                            <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                                                <Clock className="size-3" />
+                                                {course.due_in_days}d left
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-muted-foreground">
+                                            No due date
+                                        </p>
+                                    )}
                                 </CardContent>
 
-                                <CardFooter>
-                                    <Button asChild className="w-full">
+                                <CardFooter className="px-4 pt-2 pb-4">
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        className={`w-full ${brandButtonClass}`}
+                                    >
                                         <a
-                                            href={course.resource_url ?? '#'}
+                                            href={
+                                                course.resource_url ?? '#'
+                                            }
                                             target="_blank"
                                             rel="noreferrer"
                                         >

@@ -86,6 +86,7 @@ class CourseController extends Controller
                 'description' => $course->description,
                 'category' => $course->category,
                 'due_days' => $course->due_days,
+                ...$this->dueProgress($course),
                 'resource_type' => $course->resource_type,
                 'resource_url' => $course->resource_type === 'link'
                     ? $course->resource_url
@@ -299,6 +300,32 @@ class CourseController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Days remaining and percent-elapsed of a course's due window, measured
+     * from when it was published. There's no per-user assignment/completion
+     * tracking in this app — `due_days` is a static field on the course, not a
+     * personal deadline — so this is "time elapsed since publish out of the
+     * due window", not a personalized countdown. Both are null when the
+     * course has no due_days set.
+     *
+     * @return array{due_in_days: int|null, progress_percent: int|null}
+     */
+    private function dueProgress(Course $course): array
+    {
+        if ($course->due_days === null) {
+            return ['due_in_days' => null, 'progress_percent' => null];
+        }
+
+        $daysElapsed = (int) $course->created_at->diffInDays(now());
+        $dueInDays = max(0, $course->due_days - $daysElapsed);
+        $progressPercent = (int) round((($course->due_days - $dueInDays) / $course->due_days) * 100);
+
+        return [
+            'due_in_days' => $dueInDays,
+            'progress_percent' => min(100, max(0, $progressPercent)),
+        ];
     }
 
     /**

@@ -13,7 +13,7 @@ import {
     authInputClass,
     authLabelClass,
     authLinkClass,
-} from '@/lib/auth-theme';
+} from '@/lib/brand-theme';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 

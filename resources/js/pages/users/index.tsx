@@ -1,7 +1,9 @@
 import { Form, Head, router, usePage } from '@inertiajs/react';
 import {
     Ban,
+    Check,
     CircleCheck,
+    Copy,
     MoreHorizontal,
     Pencil,
     Plus,
@@ -51,6 +53,13 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useClipboard } from '@/hooks/use-clipboard';
+import { brandButtonClass } from '@/lib/brand-theme';
 import { index } from '@/routes/users';
 import type { Auth, Paginator } from '@/types';
 
@@ -179,6 +188,8 @@ export default function UsersIndex({
     const [bulkSuspendOpen, setBulkSuspendOpen] = useState(false);
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
+    const [copiedEmail, copyEmail] = useClipboard();
+
     function isRowSelectable(user: UserRow) {
         const canEditRow = assignableRoles.includes(
             user.roles[0]?.name ?? '',
@@ -247,7 +258,7 @@ export default function UsersIndex({
                     {canCreate && (
                         <Sheet open={createOpen} onOpenChange={setCreateOpen}>
                             <SheetTrigger asChild>
-                                <Button>
+                                <Button className={brandButtonClass}>
                                     <Plus className="size-4" />
                                     New user
                                 </Button>
@@ -337,6 +348,9 @@ export default function UsersIndex({
                                                 </SheetClose>
                                                 <Button
                                                     type="submit"
+                                                    className={
+                                                        brandButtonClass
+                                                    }
                                                     disabled={processing}
                                                 >
                                                     {processing && (
@@ -602,7 +616,38 @@ export default function UsersIndex({
                                             {user.name}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
-                                            {user.email}
+                                            <div className="flex items-center gap-1.5">
+                                                <span>{user.email}</span>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                copyEmail(
+                                                                    user.email,
+                                                                )
+                                                            }
+                                                            className="text-muted-foreground hover:text-foreground"
+                                                        >
+                                                            {copiedEmail ===
+                                                            user.email ? (
+                                                                <Check className="size-3.5" />
+                                                            ) : (
+                                                                <Copy className="size-3.5" />
+                                                            )}
+                                                            <span className="sr-only">
+                                                                Copy email
+                                                            </span>
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {copiedEmail ===
+                                                        user.email
+                                                            ? 'Copied!'
+                                                            : 'Copy email'}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3">
                                             {(user.roles ?? []).map(
@@ -859,6 +904,9 @@ export default function UsersIndex({
                                                                     </SheetClose>
                                                                     <Button
                                                                         type="submit"
+                                                                        className={
+                                                                            brandButtonClass
+                                                                        }
                                                                         disabled={
                                                                             processing
                                                                         }

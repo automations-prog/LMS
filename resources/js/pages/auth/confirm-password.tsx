@@ -13,7 +13,7 @@ import {
     authButtonClass,
     authInputClass,
     authLabelClass,
-} from '@/lib/auth-theme';
+} from '@/lib/brand-theme';
 import { store } from '@/routes/password/confirm';
 
 export default function ConfirmPassword() {

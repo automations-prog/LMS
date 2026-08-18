@@ -249,6 +249,34 @@ test('agent can browse only published courses', function () {
             ->where('courses.0.title', 'Published Course'));
 });
 
+test('browse computes remaining due days and progress from the publish date', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+
+    $withDueDate = Course::factory()->create([
+        'title' => 'Has A Due Date',
+        'status' => 'published',
+        'due_days' => 30,
+        'created_at' => now()->subDays(10),
+    ]);
+
+    $withoutDueDate = Course::factory()->create([
+        'title' => 'No Due Date',
+        'status' => 'published',
+        'due_days' => null,
+    ]);
+
+    $response = $this->actingAs($agent)->get(route('courses.browse'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->where('courses.0.title', 'Has A Due Date')
+        ->where('courses.0.due_in_days', 20)
+        ->where('courses.0.progress_percent', 33)
+        ->where('courses.1.title', 'No Due Date')
+        ->where('courses.1.due_in_days', null)
+        ->where('courses.1.progress_percent', null));
+});
+
 test('agent cannot access the course management table', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { brandButtonClass } from '@/lib/brand-theme';
 import { index } from '@/routes/courses';
 
 type Category = {
@@ -222,6 +223,7 @@ export default function CoursesCreate({ categories, returnTo }: Props) {
                                         type="submit"
                                         name="status"
                                         value="published"
+                                        className={brandButtonClass}
                                         disabled={processing}
                                     >
                                         {processing && <Spinner />}
