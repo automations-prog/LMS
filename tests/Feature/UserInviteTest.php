@@ -68,7 +68,7 @@ test('accepting the invite sets the password, activates, verifies, and logs the 
     $this->post(route('invite.store', $agent).'?'.$query, [
         'password' => 'NewPassword123!',
         'password_confirmation' => 'NewPassword123!',
-    ])->assertRedirect(route('dashboard'));
+    ])->assertRedirect(route('eligibility.create'));
 
     $agent->refresh();
 

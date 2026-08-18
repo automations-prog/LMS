@@ -13,3 +13,4 @@ require __DIR__.'/settings.php';
 require __DIR__.'/users.php';
 require __DIR__.'/courses.php';
 require __DIR__.'/invite.php';
+require __DIR__.'/eligibility.php';

@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users } from 'lucide-react';
+import { LayoutGrid, ShieldCheck, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -13,6 +13,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as eligibilityIndex } from '@/routes/eligibility';
 import { index as usersIndex } from '@/routes/users';
 import type { Auth, NavItem } from '@/types';
 
@@ -32,6 +33,15 @@ export function AppSidebar() {
                       title: 'Users',
                       href: usersIndex(),
                       icon: Users,
+                  },
+              ]
+            : []),
+        ...(permissions.includes('eligibility.review')
+            ? [
+                  {
+                      title: 'Eligibility',
+                      href: eligibilityIndex(),
+                      icon: ShieldCheck,
                   },
               ]
             : []),

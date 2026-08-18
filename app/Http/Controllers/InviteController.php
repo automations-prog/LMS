@@ -46,6 +46,6 @@ class InviteController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard');
+        return redirect()->route($user->hasRole('agent') ? 'eligibility.create' : 'dashboard');
     }
 }
