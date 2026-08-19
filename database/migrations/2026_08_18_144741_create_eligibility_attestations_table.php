@@ -29,7 +29,10 @@ return new class extends Migration
             $table->string('proctoring_type')->nullable();
             $table->timestamp('fingerprinting_completed_at')->nullable();
             $table->timestamp('license_application_submitted_at')->nullable();
-            $table->string('contracting_stage')->nullable();
+            $table->timestamp('contracting_confirmed_at')->nullable();
+            $table->timestamp('contracting_forwarded_at')->nullable();
+            $table->timestamp('contracting_issued_at')->nullable();
+            $table->timestamp('contracting_carrier_certs_at')->nullable();
             $table->timestamps();
         });
     }

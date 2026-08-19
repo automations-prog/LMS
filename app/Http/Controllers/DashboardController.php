@@ -7,7 +7,6 @@ use App\Models\EligibilityAttestation;
 use App\Models\LicenseSubmission;
 use App\Models\TrainingCompletion;
 use App\Models\User;
-use App\Support\ContractingStages;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -132,9 +131,12 @@ class DashboardController extends Controller
             'licenseNote' => $license?->status === LicenseSubmission::STATUS_REJECTED ? $license->note : null,
             'ahipStatus' => $ahip?->status,
             'ahipNote' => $ahip?->status === AhipCertification::STATUS_REJECTED ? $ahip->note : null,
-            'contractingStage' => $ahip?->status === AhipCertification::STATUS_VERIFIED
-                ? ($attestation?->contracting_stage ?? ContractingStages::CONFIRMED)
-                : null,
+            'contracting' => $ahip?->status === AhipCertification::STATUS_VERIFIED ? [
+                'confirmed' => $attestation?->contracting_confirmed_at !== null,
+                'forwarded' => $attestation?->contracting_forwarded_at !== null,
+                'issued' => $attestation?->contracting_issued_at !== null,
+                'carrier_certs' => $attestation?->contracting_carrier_certs_at !== null,
+            ] : null,
         ]);
     }
 }

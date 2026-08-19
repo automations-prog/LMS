@@ -17,5 +17,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('admin/eligibility/{eligibilityAttestation}/decision', [EligibilityReviewController::class, 'decision'])->name('eligibility.decision');
     Route::post('admin/eligibility/{eligibilityAttestation}/line-of-authority', [EligibilityReviewController::class, 'updateLineOfAuthority'])->name('eligibility.line-of-authority.update');
     Route::post('admin/eligibility/{eligibilityAttestation}/exam-schedule', [EligibilityReviewController::class, 'updateExamSchedule'])->name('eligibility.exam-schedule.update');
-    Route::post('admin/eligibility/{eligibilityAttestation}/contracting-stage', [EligibilityReviewController::class, 'updateContractingStage'])->name('eligibility.contracting-stage.update');
+    Route::post('admin/eligibility/{eligibilityAttestation}/contracting-stages', [EligibilityReviewController::class, 'updateContractingStages'])->name('eligibility.contracting-stages.update');
 });

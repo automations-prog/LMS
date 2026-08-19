@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
@@ -152,11 +153,35 @@ const AHIP_DECISION_OPTIONS: {
     { value: 'verified', label: 'Verified', icon: CircleCheck },
 ];
 
-const CONTRACTING_STAGE_OPTIONS: { value: string; label: string }[] = [
-    { value: 'confirmed', label: 'License & cert confirmed' },
-    { value: 'forwarded', label: 'Forwarded for contracting' },
-    { value: 'issued', label: 'Appointment issued' },
-    { value: 'carrier_certs', label: 'Carrier certifications' },
+const CONTRACTING_STAGE_OPTIONS: {
+    value: string;
+    label: string;
+    column:
+        | 'contracting_confirmed_at'
+        | 'contracting_forwarded_at'
+        | 'contracting_issued_at'
+        | 'contracting_carrier_certs_at';
+}[] = [
+    {
+        value: 'confirmed',
+        label: 'License & cert confirmed',
+        column: 'contracting_confirmed_at',
+    },
+    {
+        value: 'forwarded',
+        label: 'Forwarded for contracting',
+        column: 'contracting_forwarded_at',
+    },
+    {
+        value: 'issued',
+        label: 'Appointment issued',
+        column: 'contracting_issued_at',
+    },
+    {
+        value: 'carrier_certs',
+        label: 'Carrier certifications',
+        column: 'contracting_carrier_certs_at',
+    },
 ];
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -206,7 +231,10 @@ type EligibilityAttestation = {
     proctoring_type: string | null;
     fingerprinting_completed_at: string | null;
     license_application_submitted_at: string | null;
-    contracting_stage: string | null;
+    contracting_confirmed_at: string | null;
+    contracting_forwarded_at: string | null;
+    contracting_issued_at: string | null;
+    contracting_carrier_certs_at: string | null;
     created_at: string;
     reviewed_at: string | null;
     reviewer: { name: string } | null;
@@ -277,8 +305,11 @@ export default function OnboardingShow({ agent }: Props) {
     const [proctoringType, setProctoringType] = useState(
         agent.eligibility_attestation?.proctoring_type ?? '',
     );
-    const [contractingStage, setContractingStage] = useState(
-        agent.eligibility_attestation?.contracting_stage ?? '',
+    const [checkedStages, setCheckedStages] = useState<string[]>(
+        CONTRACTING_STAGE_OPTIONS.filter(
+            (option) =>
+                agent.eligibility_attestation?.[option.column] !== null,
+        ).map((option) => option.value),
     );
 
     const attestation = agent.eligibility_attestation;
@@ -1429,18 +1460,22 @@ export default function OnboardingShow({ agent }: Props) {
                                 <Badge
                                     variant="outline"
                                     className={
-                                        attestation?.contracting_stage ===
-                                        'carrier_certs'
+                                        attestation?.contracting_carrier_certs_at
                                             ? 'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
                                             : 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
                                     }
                                 >
-                                    {CONTRACTING_STAGE_OPTIONS.find(
-                                        (option) =>
-                                            option.value ===
-                                            (attestation?.contracting_stage ??
-                                                'confirmed'),
-                                    )?.label ?? 'Confirmed'}
+                                    {[...CONTRACTING_STAGE_OPTIONS]
+                                        .reverse()
+                                        .find(
+                                            (option) =>
+                                                attestation?.[
+                                                    option.column
+                                                ] !== null &&
+                                                attestation?.[
+                                                    option.column
+                                                ] !== undefined,
+                                        )?.label ?? 'Not started'}
                                 </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">
@@ -1479,81 +1514,117 @@ export default function OnboardingShow({ agent }: Props) {
 
                             {attestation && (
                                 <Form
-                                    {...EligibilityReviewController.updateContractingStage.form(
+                                    {...EligibilityReviewController.updateContractingStages.form(
                                         attestation.id,
                                     )}
                                     className="space-y-3"
                                 >
-                                    {({ processing, errors }) => (
-                                        <>
-                                            <div className="grid w-full gap-2">
-                                                <Label>
-                                                    Contracting stage
-                                                </Label>
-                                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                    {({ processing, errors }) => {
+                                        const savedStages =
+                                            CONTRACTING_STAGE_OPTIONS.filter(
+                                                (option) =>
+                                                    attestation[
+                                                        option.column
+                                                    ] !== null,
+                                            ).map((option) => option.value);
+                                        const isChanged =
+                                            savedStages.length !==
+                                                checkedStages.length ||
+                                            !savedStages.every((stage) =>
+                                                checkedStages.includes(
+                                                    stage,
+                                                ),
+                                            );
+
+                                        return (
+                                            <>
+                                                <div className="grid w-full gap-3">
+                                                    <Label>
+                                                        Contracting stages
+                                                    </Label>
                                                     {CONTRACTING_STAGE_OPTIONS.map(
-                                                        (option) => (
-                                                            <button
-                                                                key={
-                                                                    option.value
-                                                                }
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    setContractingStage(
-                                                                        option.value,
-                                                                    )
-                                                                }
-                                                                aria-pressed={
-                                                                    contractingStage ===
-                                                                    option.value
-                                                                }
-                                                                className={
-                                                                    contractingStage ===
-                                                                    option.value
-                                                                        ? 'rounded-md border border-primary bg-primary/5 px-3 py-2 text-left ring-1 ring-primary'
-                                                                        : 'rounded-md border px-3 py-2 text-left hover:border-primary/50'
-                                                                }
-                                                            >
-                                                                <p className="text-sm font-medium">
-                                                                    {
-                                                                        option.label
+                                                        (option) => {
+                                                            const isChecked =
+                                                                checkedStages.includes(
+                                                                    option.value,
+                                                                );
+
+                                                            return (
+                                                                <label
+                                                                    key={
+                                                                        option.value
                                                                     }
-                                                                </p>
-                                                            </button>
+                                                                    className="flex items-center gap-2 rounded-md border px-3 py-2 hover:border-primary/50"
+                                                                >
+                                                                    <Checkbox
+                                                                        checked={
+                                                                            isChecked
+                                                                        }
+                                                                        onCheckedChange={(
+                                                                            value,
+                                                                        ) =>
+                                                                            setCheckedStages(
+                                                                                (
+                                                                                    current,
+                                                                                ) =>
+                                                                                    value
+                                                                                        ? [
+                                                                                              ...current,
+                                                                                              option.value,
+                                                                                          ]
+                                                                                        : current.filter(
+                                                                                              (
+                                                                                                  stage,
+                                                                                              ) =>
+                                                                                                  stage !==
+                                                                                                  option.value,
+                                                                                          ),
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                    <span className="text-sm font-medium">
+                                                                        {
+                                                                            option.label
+                                                                        }
+                                                                    </span>
+                                                                </label>
+                                                            );
+                                                        },
+                                                    )}
+                                                    {checkedStages.map(
+                                                        (stage) => (
+                                                            <input
+                                                                key={stage}
+                                                                type="hidden"
+                                                                name="contracting_stages[]"
+                                                                value={stage}
+                                                            />
                                                         ),
                                                     )}
-                                                </div>
-                                                <input
-                                                    type="hidden"
-                                                    name="contracting_stage"
-                                                    value={contractingStage}
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors.contracting_stage
-                                                    }
-                                                />
-                                            </div>
-                                            {contractingStage !==
-                                                (attestation.contracting_stage ??
-                                                    '') && (
-                                                <div className="flex justify-start">
-                                                    <Button
-                                                        type="submit"
-                                                        disabled={
-                                                            processing ||
-                                                            !contractingStage
+                                                    <InputError
+                                                        message={
+                                                            errors.contracting_stages
                                                         }
-                                                    >
-                                                        {processing && (
-                                                            <Spinner />
-                                                        )}
-                                                        Save
-                                                    </Button>
+                                                    />
                                                 </div>
-                                            )}
-                                        </>
-                                    )}
+                                                {isChanged && (
+                                                    <div className="flex justify-start">
+                                                        <Button
+                                                            type="submit"
+                                                            disabled={
+                                                                processing
+                                                            }
+                                                        >
+                                                            {processing && (
+                                                                <Spinner />
+                                                            )}
+                                                            Save
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    }}
                                 </Form>
                             )}
                         </CardContent>

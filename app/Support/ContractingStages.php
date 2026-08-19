@@ -21,4 +21,13 @@ class ContractingStages
         self::ISSUED,
         self::CARRIER_CERTS,
     ];
+
+    /**
+     * The `eligibility_attestations` column that stores when a given stage
+     * was completed.
+     */
+    public static function column(string $stage): string
+    {
+        return "contracting_{$stage}_at";
+    }
 }

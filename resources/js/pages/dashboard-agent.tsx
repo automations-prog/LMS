@@ -26,12 +26,12 @@ type Props = {
     licenseNote: string | null;
     ahipStatus: 'pending_review' | 'verified' | 'rejected' | null;
     ahipNote: string | null;
-    contractingStage:
-        | 'confirmed'
-        | 'forwarded'
-        | 'issued'
-        | 'carrier_certs'
-        | null;
+    contracting: {
+        confirmed: boolean;
+        forwarded: boolean;
+        issued: boolean;
+        carrier_certs: boolean;
+    } | null;
 };
 
 export default function DashboardAgent({
@@ -46,7 +46,7 @@ export default function DashboardAgent({
     licenseNote,
     ahipStatus,
     ahipNote,
-    contractingStage,
+    contracting,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const [markingDone, setMarkingDone] = useState(false);
@@ -209,10 +209,10 @@ export default function DashboardAgent({
                             </div>
                         )}
 
-                    {contractingStage !== null && (
+                    {contracting !== null && (
                         <div className="w-full">
                             <ContractingAndSalesTrainingCard
-                                contractingStage={contractingStage}
+                                contracting={contracting}
                             />
                         </div>
                     )}

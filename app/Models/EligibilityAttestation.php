@@ -26,7 +26,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $proctoring_type
  * @property Carbon|null $fingerprinting_completed_at
  * @property Carbon|null $license_application_submitted_at
- * @property string|null $contracting_stage
+ * @property Carbon|null $contracting_confirmed_at
+ * @property Carbon|null $contracting_forwarded_at
+ * @property Carbon|null $contracting_issued_at
+ * @property Carbon|null $contracting_carrier_certs_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -47,7 +50,10 @@ use Illuminate\Support\Carbon;
     'proctoring_type',
     'fingerprinting_completed_at',
     'license_application_submitted_at',
-    'contracting_stage',
+    'contracting_confirmed_at',
+    'contracting_forwarded_at',
+    'contracting_issued_at',
+    'contracting_carrier_certs_at',
 ])]
 class EligibilityAttestation extends Model
 {
@@ -86,6 +92,10 @@ class EligibilityAttestation extends Model
             'exam_scheduled_at' => 'datetime',
             'fingerprinting_completed_at' => 'datetime',
             'license_application_submitted_at' => 'datetime',
+            'contracting_confirmed_at' => 'datetime',
+            'contracting_forwarded_at' => 'datetime',
+            'contracting_issued_at' => 'datetime',
+            'contracting_carrier_certs_at' => 'datetime',
         ];
     }
 

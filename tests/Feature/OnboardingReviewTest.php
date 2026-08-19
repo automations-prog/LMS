@@ -320,7 +320,7 @@ test('the onboarding list and detail page report AHIP certification status', fun
         ));
 });
 
-test('the onboarding list and detail page report the contracting stage', function () {
+test('the onboarding list and detail page report the contracting stages', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
@@ -328,21 +328,26 @@ test('the onboarding list and detail page report the contracting stage', functio
     $agent->assignRole('agent');
     EligibilityAttestation::factory()->for($agent)->create([
         'status' => EligibilityAttestation::STATUS_CLEARED,
-        'contracting_stage' => 'forwarded',
+        'contracting_forwarded_at' => now(),
     ]);
 
     $this->actingAs($admin)
         ->get(route('onboarding.index'))
-        ->assertInertia(fn ($page) => $page->where(
-            'agents.data.0.eligibility_attestation.contracting_stage',
-            'forwarded',
-        ));
+        ->assertInertia(fn ($page) => $page
+            ->where(
+                'agents.data.0.eligibility_attestation.contracting_forwarded_at',
+                fn ($value) => $value !== null,
+            )
+            ->where(
+                'agents.data.0.eligibility_attestation.contracting_confirmed_at',
+                null,
+            ));
 
     $this->actingAs($admin)
         ->get(route('onboarding.show', $agent))
         ->assertInertia(fn ($page) => $page->where(
-            'agent.eligibility_attestation.contracting_stage',
-            'forwarded',
+            'agent.eligibility_attestation.contracting_forwarded_at',
+            fn ($value) => $value !== null,
         ));
 });
 

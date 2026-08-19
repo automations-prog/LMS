@@ -28,21 +28,28 @@ const SALES_TRAINING_TOPICS = [
 ];
 
 type Props = {
-    contractingStage:
-        | 'confirmed'
-        | 'forwarded'
-        | 'issued'
-        | 'carrier_certs';
+    contracting: {
+        confirmed: boolean;
+        forwarded: boolean;
+        issued: boolean;
+        carrier_certs: boolean;
+    };
 };
 
 export default function ContractingAndSalesTrainingCard({
-    contractingStage,
+    contracting,
 }: Props) {
-    const currentIndex = CONTRACTING_STAGES.findIndex(
-        (stage) => stage.key === contractingStage,
+    // Stages can be checked independently and out of order — "current" is
+    // just the first one not yet done, for the "(you are here)" pointer;
+    // if everything's done, point at the last stage instead.
+    const firstIncomplete = CONTRACTING_STAGES.findIndex(
+        (stage) => !contracting[stage.key as keyof typeof contracting],
     );
-    const isAppointed =
-        contractingStage === 'issued' || contractingStage === 'carrier_certs';
+    const currentIndex =
+        firstIncomplete === -1
+            ? CONTRACTING_STAGES.length - 1
+            : firstIncomplete;
+    const isAppointed = contracting.issued || contracting.carrier_certs;
 
     return (
         <Card>
@@ -68,7 +75,10 @@ export default function ContractingAndSalesTrainingCard({
                     </p>
                     <div className="flex items-center gap-1">
                         {CONTRACTING_STAGES.map((stage, index) => {
-                            const isDone = index < currentIndex;
+                            const isDone =
+                                contracting[
+                                    stage.key as keyof typeof contracting
+                                ];
                             const isCurrent = index === currentIndex;
 
                             return (

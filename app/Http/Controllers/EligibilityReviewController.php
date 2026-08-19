@@ -111,20 +111,41 @@ class EligibilityReviewController extends Controller
     }
 
     /**
-     * Advance (or correct) the agent's carrier contracting & sales training
-     * stage. Purely admin-driven — the agent has no action to take here.
+     * Check or uncheck the agent's carrier contracting & sales training
+     * stages, independently of each other. Purely admin-driven — the agent
+     * has no action to take here.
+     *
+     * Each stage in `ContractingStages::ALL` present in the submitted list
+     * gets stamped with `now()` the first time it's checked (re-saving an
+     * already-checked stage leaves its original timestamp untouched);
+     * anything absent from the list is cleared back to null.
      */
-    public function updateContractingStage(Request $request, EligibilityAttestation $eligibilityAttestation): RedirectResponse
+    public function updateContractingStages(Request $request, EligibilityAttestation $eligibilityAttestation): RedirectResponse
     {
         Gate::authorize('review', $eligibilityAttestation);
 
         $validated = $request->validate([
-            'contracting_stage' => ['required', Rule::in(ContractingStages::ALL)],
+            'contracting_stages' => ['sometimes', 'array'],
+            'contracting_stages.*' => [Rule::in(ContractingStages::ALL)],
         ]);
 
-        $eligibilityAttestation->update($validated);
+        $checked = $validated['contracting_stages'] ?? [];
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Contracting stage updated.')]);
+        $updates = [];
+
+        foreach (ContractingStages::ALL as $stage) {
+            $column = ContractingStages::column($stage);
+
+            if (in_array($stage, $checked, true)) {
+                $updates[$column] = $eligibilityAttestation->{$column} ?? now();
+            } else {
+                $updates[$column] = null;
+            }
+        }
+
+        $eligibilityAttestation->update($updates);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Contracting stages updated.')]);
 
         return back();
     }

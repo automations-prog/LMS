@@ -98,6 +98,40 @@ const CONTRACTING_STAGE_CLASSES: Record<string, string> = {
         'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
 };
 
+const CONTRACTING_STAGE_ORDER: {
+    key: 'confirmed' | 'forwarded' | 'issued' | 'carrier_certs';
+    column:
+        | 'contracting_confirmed_at'
+        | 'contracting_forwarded_at'
+        | 'contracting_issued_at'
+        | 'contracting_carrier_certs_at';
+}[] = [
+    { key: 'confirmed', column: 'contracting_confirmed_at' },
+    { key: 'forwarded', column: 'contracting_forwarded_at' },
+    { key: 'issued', column: 'contracting_issued_at' },
+    { key: 'carrier_certs', column: 'contracting_carrier_certs_at' },
+];
+
+// Stages are independently checkable — the badge just reflects the
+// furthest-along one that's been checked, regardless of order.
+function highestContractingStage(
+    attestation: AgentRow['eligibility_attestation'],
+): string | null {
+    if (!attestation) {
+        return null;
+    }
+
+    let highest: string | null = null;
+
+    for (const { key, column } of CONTRACTING_STAGE_ORDER) {
+        if (attestation[column] !== null) {
+            highest = key;
+        }
+    }
+
+    return highest;
+}
+
 const NOT_SUBMITTED_CLASSES =
     'border-transparent bg-muted text-muted-foreground';
 
@@ -135,7 +169,10 @@ type AgentRow = {
         exam_scheduled_at: string | null;
         fingerprinting_completed_at: string | null;
         license_application_submitted_at: string | null;
-        contracting_stage: string | null;
+        contracting_confirmed_at: string | null;
+        contracting_forwarded_at: string | null;
+        contracting_issued_at: string | null;
+        contracting_carrier_certs_at: string | null;
     } | null;
     training_completion: { status: string } | null;
     license_submission: { status: string } | null;
@@ -527,14 +564,10 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                     </td>
                                     <td className="px-4 py-3">
                                         <StatusBadge
-                                            status={
-                                                agent.eligibility_attestation
-                                                    ?.contracting_stage ??
-                                                null
-                                            }
-                                            labels={
-                                                CONTRACTING_STAGE_LABELS
-                                            }
+                                            status={highestContractingStage(
+                                                agent.eligibility_attestation,
+                                            )}
+                                            labels={CONTRACTING_STAGE_LABELS}
                                             classes={
                                                 CONTRACTING_STAGE_CLASSES
                                             }
