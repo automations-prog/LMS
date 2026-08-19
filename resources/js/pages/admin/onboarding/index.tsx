@@ -202,11 +202,11 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                         }
                     >
                         <SelectTrigger className="w-56">
-                            <SelectValue placeholder="Training status" />
+                            <SelectValue placeholder="XCEL Training status" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">
-                                All training statuses
+                                All XCEL Training statuses
                             </SelectItem>
                             {Object.entries(TRAINING_STATUS_LABELS).map(
                                 ([status, label]) => (
@@ -228,7 +228,7 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                     Eligibility
                                 </th>
                                 <th className="px-4 py-3 font-medium">
-                                    Training
+                                    XCEL Training
                                 </th>
                                 <th className="px-4 py-3 font-medium">
                                     <span className="sr-only">Actions</span>

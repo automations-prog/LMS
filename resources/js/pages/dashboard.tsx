@@ -64,7 +64,7 @@ const STAT_CARDS: {
     },
     {
         key: 'pending_training_reviews',
-        label: 'Pending training reviews',
+        label: 'Pending XCEL Training reviews',
         href: onboardingIndex(),
     },
 ];

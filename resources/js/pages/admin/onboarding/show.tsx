@@ -393,7 +393,7 @@ export default function OnboardingShow({ agent }: Props) {
                     <Card className="lg:col-span-2">
                         <CardHeader>
                             <div className="flex items-center justify-between gap-4">
-                                <CardTitle>Training</CardTitle>
+                                <CardTitle>XCEL Training</CardTitle>
                                 {completion && (
                                     <Badge variant="outline">
                                         {TRAINING_STATUS_LABELS[
@@ -406,7 +406,7 @@ export default function OnboardingShow({ agent }: Props) {
 
                         <CardContent className="space-y-6">
                             {!completion ? (
-                                <NotSubmitted label="Training certificate" />
+                                <NotSubmitted label="XCEL Training certificate" />
                             ) : (
                                 <>
                                     <Button variant="outline" size="sm" asChild>
@@ -460,7 +460,7 @@ export default function OnboardingShow({ agent }: Props) {
 
                     <Card className="h-fit">
                         <CardHeader>
-                            <CardTitle>Training decision</CardTitle>
+                            <CardTitle>XCEL Training decision</CardTitle>
                             <p className="text-sm text-muted-foreground">
                                 A note is required when rejecting.
                             </p>
