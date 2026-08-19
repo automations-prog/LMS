@@ -46,6 +46,25 @@ test('the onboarding list shows every agent with both statuses, by default unfil
         ->has('agents.data', 2));
 });
 
+test('the onboarding list is sorted by newest agent first', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $older = User::factory()->create(['created_at' => now()->subDays(2)]);
+    $older->assignRole('agent');
+
+    $newer = User::factory()->create(['created_at' => now()]);
+    $newer->assignRole('agent');
+
+    $response = $this->actingAs($admin)
+        ->get(route('onboarding.index'))
+        ->assertOk();
+
+    $response->assertInertia(fn ($page) => $page
+        ->where('agents.data.0.id', $newer->id)
+        ->where('agents.data.1.id', $older->id));
+});
+
 test('the onboarding list can be searched by agent name or email', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');

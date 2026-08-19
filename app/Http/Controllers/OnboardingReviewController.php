@@ -33,7 +33,7 @@ class OnboardingReviewController extends Controller
                 ->whereHas('eligibilityAttestation', fn ($query) => $query->where('status', $eligibilityStatus)))
             ->when($trainingStatus !== '', fn ($query) => $query
                 ->whereHas('trainingCompletion', fn ($query) => $query->where('status', $trainingStatus)))
-            ->orderBy('name')
+            ->orderByDesc('created_at')
             ->paginate(25)
             ->appends([
                 'search' => $search,
