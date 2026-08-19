@@ -2,6 +2,7 @@ import { Form, Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft,
     Calendar,
+    CheckCircle2,
     CircleCheck,
     CircleX,
     FileText,
@@ -52,6 +53,12 @@ const ELIGIBILITY_DECISION_OPTIONS: {
     { value: 'flagged_for_waiver', label: 'Flag for review', icon: Flag },
     { value: 'not_eligible', label: 'Not eligible', icon: ShieldAlert },
     { value: 'cleared', label: 'Eligible', icon: ShieldCheck },
+];
+
+const LINE_OF_AUTHORITY_OPTIONS: { value: string; label: string; price: string }[] = [
+    { value: 'life', label: 'Life only', price: '$34.95' },
+    { value: 'health', label: 'Health only', price: '$34.95' },
+    { value: 'life_and_health', label: 'Life and health', price: '$39.95' },
 ];
 
 const TRAINING_STATUS_LABELS: Record<string, string> = {
@@ -120,6 +127,8 @@ type EligibilityAttestation = {
     felony_details: string | null;
     is_us_citizen: boolean;
     work_authorization_path: string | null;
+    enrollment_completed_at: string | null;
+    line_of_authority: string | null;
     created_at: string;
     reviewed_at: string | null;
     reviewer: { name: string } | null;
@@ -157,6 +166,10 @@ export default function OnboardingShow({ agent }: Props) {
         string | null
     >(null);
     const getInitials = useInitials();
+
+    const [lineOfAuthority, setLineOfAuthority] = useState(
+        agent.eligibility_attestation?.line_of_authority ?? '',
+    );
 
     const attestation = agent.eligibility_attestation;
     const completion = agent.training_completion;
@@ -390,6 +403,139 @@ export default function OnboardingShow({ agent }: Props) {
                         </CardContent>
                     </Card>
 
+                    <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-4">
+                                <CardTitle>Enrollment</CardTitle>
+                                <Badge
+                                    variant="outline"
+                                    className={
+                                        attestation?.enrollment_completed_at
+                                            ? 'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+                                            : 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
+                                    }
+                                >
+                                    {attestation?.enrollment_completed_at
+                                        ? 'Enrolled'
+                                        : 'Not yet'}
+                                </Badge>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="space-y-6">
+                            <Field
+                                icon={CheckCircle2}
+                                label="XCEL enrollment status"
+                                value={
+                                    attestation?.enrollment_completed_at ? (
+                                        `Enrolled on ${dateFormatter.format(
+                                            new Date(
+                                                attestation.enrollment_completed_at,
+                                            ),
+                                        )}`
+                                    ) : (
+                                        <span className="text-muted-foreground">
+                                            Not yet marked as enrolled
+                                        </span>
+                                    )
+                                }
+                            />
+
+                            {attestation && (
+                                <>
+                                    <Separator />
+
+                                    <Form
+                                        {...EligibilityReviewController.updateLineOfAuthority.form(
+                                            attestation.id,
+                                        )}
+                                        className="space-y-3"
+                                    >
+                                        {({ processing, errors }) => (
+                                            <>
+                                                <div className="grid w-full gap-2">
+                                                    <Label>
+                                                        Line of authority
+                                                    </Label>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {LINE_OF_AUTHORITY_OPTIONS.map(
+                                                            (option) => (
+                                                                <button
+                                                                    key={
+                                                                        option.value
+                                                                    }
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setLineOfAuthority(
+                                                                            option.value,
+                                                                        )
+                                                                    }
+                                                                    aria-pressed={
+                                                                        lineOfAuthority ===
+                                                                        option.value
+                                                                    }
+                                                                    className={
+                                                                        lineOfAuthority ===
+                                                                        option.value
+                                                                            ? 'rounded-md border border-primary bg-primary/5 px-3 py-2 text-left ring-1 ring-primary'
+                                                                            : 'rounded-md border px-3 py-2 text-left hover:border-primary/50'
+                                                                    }
+                                                                >
+                                                                    <p className="text-sm font-medium">
+                                                                        {
+                                                                            option.label
+                                                                        }
+                                                                    </p>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        {
+                                                                            option.price
+                                                                        }
+                                                                    </p>
+                                                                </button>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                    <input
+                                                        type="hidden"
+                                                        name="line_of_authority"
+                                                        value={
+                                                            lineOfAuthority
+                                                        }
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            errors.line_of_authority
+                                                        }
+                                                    />
+                                                </div>
+                                                {lineOfAuthority !==
+                                                    (attestation.line_of_authority ??
+                                                        '') && (
+                                                    <div className="flex justify-start">
+                                                        <Button
+                                                            type="submit"
+                                                            disabled={
+                                                                processing ||
+                                                                !lineOfAuthority
+                                                            }
+                                                        >
+                                                            {processing && (
+                                                                <Spinner />
+                                                            )}
+                                                            Save
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Form>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {attestation?.enrollment_completed_at && (
+                    <>
                     <Card className="lg:col-span-2">
                         <CardHeader>
                             <div className="flex items-center justify-between gap-4">
@@ -574,6 +720,8 @@ export default function OnboardingShow({ agent }: Props) {
                             )}
                         </CardContent>
                     </Card>
+                    </>
+                    )}
                 </div>
             </div>
         </>

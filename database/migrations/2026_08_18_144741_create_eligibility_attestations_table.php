@@ -24,6 +24,7 @@ return new class extends Migration
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamp('enrollment_completed_at')->nullable();
+            $table->string('line_of_authority')->nullable();
             $table->timestamps();
         });
     }

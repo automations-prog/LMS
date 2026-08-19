@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EligibilityAttestation;
 use App\Notifications\EligibilityDecisionNotification;
+use App\Support\LinesOfAuthority;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -65,6 +66,25 @@ class EligibilityReviewController extends Controller
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Decision recorded.')]);
+
+        return back();
+    }
+
+    /**
+     * Set or correct the agent's selected line of authority. Independent
+     * of the eligibility decision — an admin can adjust this at any time.
+     */
+    public function updateLineOfAuthority(Request $request, EligibilityAttestation $eligibilityAttestation): RedirectResponse
+    {
+        Gate::authorize('review', $eligibilityAttestation);
+
+        $validated = $request->validate([
+            'line_of_authority' => ['required', Rule::in(LinesOfAuthority::ALL)],
+        ]);
+
+        $eligibilityAttestation->update($validated);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Line of authority updated.')]);
 
         return back();
     }

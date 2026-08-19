@@ -150,7 +150,7 @@ test('the pending-review page is only reachable while under review', function ()
         ->assertRedirect(route('dashboard'));
 });
 
-test('a cleared agent can mark enrollment as done', function () {
+test('a cleared agent can mark enrollment as done with a line of authority', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');
     $attestation = EligibilityAttestation::factory()->for($agent)->create([
@@ -158,10 +158,28 @@ test('a cleared agent can mark enrollment as done', function () {
     ]);
 
     $this->actingAs($agent)
-        ->post(route('eligibility.complete-enrollment'))
+        ->post(route('eligibility.complete-enrollment'), ['line_of_authority' => 'life'])
         ->assertRedirect(route('dashboard'));
 
-    expect($attestation->fresh()->enrollment_completed_at)->not->toBeNull();
+    $attestation->refresh();
+    expect($attestation->enrollment_completed_at)->not->toBeNull();
+    expect($attestation->line_of_authority)->toBe('life');
+});
+
+test('marking enrollment as done requires a valid line of authority', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    EligibilityAttestation::factory()->for($agent)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+
+    $this->actingAs($agent)
+        ->post(route('eligibility.complete-enrollment'), [])
+        ->assertInvalid('line_of_authority');
+
+    $this->actingAs($agent)
+        ->post(route('eligibility.complete-enrollment'), ['line_of_authority' => 'not-a-real-option'])
+        ->assertInvalid('line_of_authority');
 });
 
 test('an agent who is not cleared cannot mark enrollment as done', function () {
@@ -170,7 +188,7 @@ test('an agent who is not cleared cannot mark enrollment as done', function () {
     EligibilityAttestation::factory()->for($agent)->create();
 
     $this->actingAs($agent)
-        ->post(route('eligibility.complete-enrollment'))
+        ->post(route('eligibility.complete-enrollment'), ['line_of_authority' => 'life'])
         ->assertForbidden();
 });
 
@@ -179,7 +197,7 @@ test('an agent with no attestation cannot mark enrollment as done', function () 
     $agent->assignRole('agent');
 
     $this->actingAs($agent)
-        ->post(route('eligibility.complete-enrollment'))
+        ->post(route('eligibility.complete-enrollment'), ['line_of_authority' => 'life'])
         ->assertForbidden();
 });
 
@@ -220,6 +238,44 @@ test('agent cannot access admin eligibility routes', function () {
     $this->actingAs($agent)
         ->post(route('eligibility.decision', $attestation), ['status' => 'cleared'])
         ->assertForbidden();
+    $this->actingAs($agent)
+        ->post(route('eligibility.line-of-authority.update', $attestation), ['line_of_authority' => 'life'])
+        ->assertForbidden();
+});
+
+test('admin can set and change an agent\'s line of authority', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->for($agent)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+        'line_of_authority' => 'life',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.line-of-authority.update', $attestation), ['line_of_authority' => 'life_and_health'])
+        ->assertRedirect();
+
+    expect($attestation->fresh()->line_of_authority)->toBe('life_and_health');
+});
+
+test('updating line of authority requires a valid option', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->for($agent)->create();
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.line-of-authority.update', $attestation), [])
+        ->assertInvalid('line_of_authority');
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.line-of-authority.update', $attestation), ['line_of_authority' => 'not-a-real-option'])
+        ->assertInvalid('line_of_authority');
 });
 
 test('a decision can be changed after it was already made', function () {

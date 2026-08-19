@@ -132,6 +132,53 @@ test('the onboarding detail page shows both sections, with placeholders when one
         ->where('agent.training_completion', null));
 });
 
+test('the onboarding list and detail page report enrollment completion', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    // Explicit, distinct created_at values — the list orders newest agent
+    // first, and two records created within the same second would otherwise
+    // tie and make the ordering assertion below flaky.
+    $notYetEnrolled = User::factory()->create(['created_at' => now()->subMinute()]);
+    $notYetEnrolled->assignRole('agent');
+    EligibilityAttestation::factory()->for($notYetEnrolled)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+
+    $enrolled = User::factory()->create(['created_at' => now()]);
+    $enrolled->assignRole('agent');
+    EligibilityAttestation::factory()->for($enrolled)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+        'enrollment_completed_at' => now(),
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where(
+                'agents.data.0.eligibility_attestation.enrollment_completed_at',
+                fn ($value) => $value !== null,
+            )
+            ->where(
+                'agents.data.1.eligibility_attestation.enrollment_completed_at',
+                null,
+            ));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.show', $enrolled))
+        ->assertInertia(fn ($page) => $page->where(
+            'agent.eligibility_attestation.enrollment_completed_at',
+            fn ($value) => $value !== null,
+        ));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.show', $notYetEnrolled))
+        ->assertInertia(fn ($page) => $page->where(
+            'agent.eligibility_attestation.enrollment_completed_at',
+            null,
+        ));
+});
+
 test('onboarding.show 404s for a user who is not an agent', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');

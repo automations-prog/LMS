@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEligibilityAttestationRequest;
 use App\Models\EligibilityAttestation;
+use App\Support\LinesOfAuthority;
 use App\Support\UsStates;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -83,7 +85,14 @@ class EligibilityController extends Controller
 
         abort_unless($attestation?->status === EligibilityAttestation::STATUS_CLEARED, 403);
 
-        $attestation->update(['enrollment_completed_at' => now()]);
+        $validated = $request->validate([
+            'line_of_authority' => ['required', Rule::in(LinesOfAuthority::ALL)],
+        ]);
+
+        $attestation->update([
+            'enrollment_completed_at' => now(),
+            'line_of_authority' => $validated['line_of_authority'],
+        ]);
 
         return redirect()->route('dashboard');
     }

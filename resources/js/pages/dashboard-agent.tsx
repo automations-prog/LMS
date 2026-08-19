@@ -5,6 +5,7 @@ import EligibilityController from '@/actions/App/Http/Controllers/EligibilityCon
 import TrainingController from '@/actions/App/Http/Controllers/TrainingController';
 import FileInput from '@/components/file-input';
 import Heading from '@/components/heading';
+import HowToEnrollCard from '@/components/how-to-enroll-card';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -28,13 +29,17 @@ export default function DashboardAgent({
     const { auth } = usePage<{ auth: Auth }>().props;
     const [markingDone, setMarkingDone] = useState(false);
 
-    function markEnrollmentDone() {
+    function markEnrollmentDone(lineOfAuthority: string) {
         setMarkingDone(true);
 
-        router.post(EligibilityController.completeEnrollment.url(), undefined, {
-            preserveScroll: true,
-            onFinish: () => setMarkingDone(false),
-        });
+        router.post(
+            EligibilityController.completeEnrollment.url(),
+            { line_of_authority: lineOfAuthority },
+            {
+                preserveScroll: true,
+                onFinish: () => setMarkingDone(false),
+            },
+        );
     }
 
     if (eligibilityStatus === 'under_review') {
@@ -72,61 +77,11 @@ export default function DashboardAgent({
                 </div>
 
                 {eligibilityStatus === 'cleared' && !enrollmentCompleted && (
-                    <div className="max-w-2xl space-y-4 rounded-xl border border-sidebar-border/70 p-6 dark:border-sidebar-border">
-                        <div className="flex items-start justify-between gap-4">
-                            <Heading
-                                variant="small"
-                                title="How to enroll"
-                                description="You're eligible! Complete these steps to enroll."
-                            />
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={markingDone}
-                                onClick={markEnrollmentDone}
-                            >
-                                {markingDone && <Spinner />}
-                                Mark as done
-                            </Button>
-                        </div>
-
-                        <ol className="list-decimal space-y-3 pl-5 text-sm">
-                            <li>
-                                Go to:{' '}
-                                <a
-                                    href="https://partners.xcelsolutions.com/pitchuniversity"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-primary underline underline-offset-4"
-                                >
-                                    partners.xcelsolutions.com/pitchuniversity
-                                </a>
-                            </li>
-                            <li>
-                                Confirm you're in the right spot — check the
-                                grey bar at the top shows Partner:
-                                pitchuniversity. If it doesn't show this,
-                                enter the Partner Code on the homepage first
-                                before continuing.
-                            </li>
-                            <li>
-                                Choose your line of authority:
-                                <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-                                    <li>Life only — $34.95</li>
-                                    <li>Health only — $34.95</li>
-                                    <li>Life &amp; Health (both) — $39.95</li>
-                                </ul>
-                            </li>
-                        </ol>
-
-                        <p className="text-sm text-muted-foreground">
-                            Once enrolled, log in and confirm you can access
-                            the course before moving to Step 3.
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Stuck or partner code not showing? Ask here in
-                            the channel.
-                        </p>
+                    <div className="max-w-2xl">
+                        <HowToEnrollCard
+                            onMarkAsDone={markEnrollmentDone}
+                            markingDone={markingDone}
+                        />
                     </div>
                 )}
 
@@ -146,33 +101,31 @@ export default function DashboardAgent({
                                         Target:
                                     </span>{' '}
                                     2–3 weeks. This is done on your own time,
-                                    outside work hours — it's an investment
-                                    in your own career. For reference, our
-                                    founder/leadership did this studying
-                                    nights only and finished in about 2
-                                    weeks. XCEL gives you 30 days per phase
-                                    as a safety net, but that's not the pace
-                                    to aim for — the sooner you finish, the
-                                    sooner you're earning as a licensed
-                                    agent.
+                                    outside work hours — it's an investment in
+                                    your own career. For reference, our
+                                    founder/leadership did this studying nights
+                                    only and finished in about 2 weeks. XCEL
+                                    gives you 30 days per phase as a safety net,
+                                    but that's not the pace to aim for — the
+                                    sooner you finish, the sooner you're earning
+                                    as a licensed agent.
                                 </p>
                                 <p>
                                     <span className="font-medium text-foreground">
                                         Timeline:
                                     </span>{' '}
-                                    30 days for Part 1 (Pre-Licensing
-                                    Course), then a fresh 30 days for Parts
-                                    2–3 (Prep Review + Exam Simulators)
-                                    combined.
+                                    30 days for Part 1 (Pre-Licensing Course),
+                                    then a fresh 30 days for Parts 2–3 (Prep
+                                    Review + Exam Simulators) combined.
                                 </p>
                                 <p>
                                     <span className="font-medium text-foreground">
                                         Rule of thumb:
                                     </span>{' '}
-                                    Chapter quizzes 70%+, Prep Review 80%+,
-                                    Exam Simulators 85%+ — if you're
-                                    consistently hitting those, you're ready
-                                    for the real exam.
+                                    Chapter quizzes 70%+, Prep Review 80%+, Exam
+                                    Simulators 85%+ — if you're consistently
+                                    hitting those, you're ready for the real
+                                    exam.
                                 </p>
                                 <p>
                                     Stuck on course content? Use XCEL's own
@@ -223,9 +176,7 @@ export default function DashboardAgent({
                                                     size="sm"
                                                     disabled={processing}
                                                 >
-                                                    {processing && (
-                                                        <Spinner />
-                                                    )}
+                                                    {processing && <Spinner />}
                                                     Submit certificate
                                                 </Button>
                                             </div>

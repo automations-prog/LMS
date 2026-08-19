@@ -43,6 +43,14 @@ class RolesAndPermissionsSeeder extends Seeder
             Permission::findOrCreate($permission);
         }
 
+        // `DatabaseSeeder` runs seeders under `WithoutModelEvents`, which
+        // suppresses the `saved` event Spatie normally uses to bust its
+        // permission cache on create. Without this, the cache built by the
+        // very first `findOrCreate()` lookup above stays stale, so the
+        // `syncPermissions()` calls below can't find the permissions just
+        // created and throw `PermissionDoesNotExist`.
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         $superAdmin = Role::findOrCreate('super-admin');
         $superAdmin->syncPermissions($permissions);
 

@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $reviewed_by
  * @property Carbon|null $reviewed_at
  * @property Carbon|null $enrollment_completed_at
+ * @property string|null $line_of_authority
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -36,6 +37,7 @@ use Illuminate\Support\Carbon;
     'reviewed_by',
     'reviewed_at',
     'enrollment_completed_at',
+    'line_of_authority',
 ])]
 class EligibilityAttestation extends Model
 {
