@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('onboarding/training', [TrainingController::class, 'store'])->name('training.store');
 
+    Route::post('admin/training/bulk-decision', [TrainingReviewController::class, 'bulkDecision'])->name('training.bulk-decision');
     Route::get('admin/training/{trainingCompletion}/document', [TrainingReviewController::class, 'document'])->name('training.document');
     Route::post('admin/training/{trainingCompletion}/decision', [TrainingReviewController::class, 'decision'])->name('training.decision');
 });

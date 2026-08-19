@@ -1,11 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Search } from 'lucide-react';
+import { Eye, ListChecks, Pencil, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { show } from '@/actions/App/Http/Controllers/OnboardingReviewController';
 import { DataPagination } from '@/components/data-pagination';
 import Heading from '@/components/heading';
+import OnboardingBulkUpdateDialog from '@/components/onboarding-bulk-update-dialog';
+import OnboardingUpdateDialog from '@/components/onboarding-update-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -16,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { index } from '@/routes/onboarding';
 import type { Paginator } from '@/types';
+import type { OnboardingAgent } from '@/types/onboarding';
 
 const ELIGIBILITY_STATUS_LABELS: Record<string, string> = {
     pending: 'Pending',
@@ -92,8 +96,7 @@ const CONTRACTING_STAGE_CLASSES: Record<string, string> = {
         'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
     forwarded:
         'border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-    issued:
-        'border-transparent bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+    issued: 'border-transparent bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
     carrier_certs:
         'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
 };
@@ -159,25 +162,7 @@ function StatusBadge({
     );
 }
 
-type AgentRow = {
-    id: number;
-    name: string;
-    email: string;
-    eligibility_attestation: {
-        status: string;
-        enrollment_completed_at: string | null;
-        exam_scheduled_at: string | null;
-        fingerprinting_completed_at: string | null;
-        license_application_submitted_at: string | null;
-        contracting_confirmed_at: string | null;
-        contracting_forwarded_at: string | null;
-        contracting_issued_at: string | null;
-        contracting_carrier_certs_at: string | null;
-    } | null;
-    training_completion: { status: string } | null;
-    license_submission: { status: string } | null;
-    ahip_certification: { status: string } | null;
-};
+type AgentRow = OnboardingAgent;
 
 function CompletionBadge({
     label,
@@ -237,6 +222,33 @@ function applyFilters(overrides: Partial<Filters>, filters: Filters) {
 export default function OnboardingIndex({ agents, filters }: Props) {
     const [search, setSearch] = useState(filters.search);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Only the id is tracked (not the row object) so that once a decision
+    // form inside the dialog submits and Inertia refreshes `agents`, the
+    // dialog picks up the fresh status/reviewed-by from current props
+    // instead of showing a stale snapshot.
+    const [updatingAgentId, setUpdatingAgentId] = useState<number | null>(null);
+    const updatingAgent =
+        agents.data.find((agent) => agent.id === updatingAgentId) ?? null;
+
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [bulkUpdateOpen, setBulkUpdateOpen] = useState(false);
+
+    const allSelected =
+        agents.data.length > 0 &&
+        agents.data.every((agent) => selectedIds.includes(agent.id));
+
+    function toggleSelectAll() {
+        setSelectedIds(allSelected ? [] : agents.data.map((agent) => agent.id));
+    }
+
+    function toggleSelectOne(id: number) {
+        setSelectedIds((current) =>
+            current.includes(id)
+                ? current.filter((existing) => existing !== id)
+                : [...current, id],
+        );
+    }
 
     // Debounced directly from the input's onChange — see the identical note
     // in resources/js/pages/users/index.tsx for why not a useEffect.
@@ -390,8 +402,7 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                         onValueChange={(status) =>
                             applyFilters(
                                 {
-                                    ahip_status:
-                                        status === 'all' ? '' : status,
+                                    ahip_status: status === 'all' ? '' : status,
                                 },
                                 filters,
                             )
@@ -415,10 +426,35 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                     </Select>
                 </div>
 
+                {selectedIds.length > 0 && (
+                    <div className="flex items-center justify-between rounded-xl border border-sidebar-border/70 bg-muted/50 px-4 py-2 dark:border-sidebar-border">
+                        <p className="text-sm text-muted-foreground">
+                            {selectedIds.length} selected
+                        </p>
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setBulkUpdateOpen(true)}
+                        >
+                            <ListChecks />
+                            Bulk update
+                        </Button>
+                    </div>
+                )}
+
                 <div className="overflow-x-auto rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-sidebar-border/70 text-left text-muted-foreground dark:border-sidebar-border">
+                                <th className="w-10 px-4 py-3">
+                                    <Checkbox
+                                        checked={allSelected}
+                                        disabled={agents.data.length === 0}
+                                        onCheckedChange={toggleSelectAll}
+                                        aria-label="Select all agents"
+                                    />
+                                </th>
                                 <th className="px-4 py-3 font-medium">Agent</th>
                                 <th className="px-4 py-3 font-medium">
                                     Eligibility
@@ -458,6 +494,17 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                     key={agent.id}
                                     className="border-b border-sidebar-border/70 last:border-0 dark:border-sidebar-border"
                                 >
+                                    <td className="px-4 py-3">
+                                        <Checkbox
+                                            checked={selectedIds.includes(
+                                                agent.id,
+                                            )}
+                                            onCheckedChange={() =>
+                                                toggleSelectOne(agent.id)
+                                            }
+                                            aria-label={`Select ${agent.name}`}
+                                        />
+                                    </td>
                                     <td className="px-4 py-3">
                                         <div>{agent.name}</div>
                                         <div className="text-xs text-muted-foreground">
@@ -503,8 +550,7 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                             label="Scheduled"
                                             completedAt={
                                                 agent.eligibility_attestation
-                                                    ?.exam_scheduled_at ??
-                                                null
+                                                    ?.exam_scheduled_at ?? null
                                             }
                                             ready={
                                                 agent.training_completion
@@ -522,8 +568,7 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                             }
                                             ready={
                                                 agent.eligibility_attestation
-                                                    ?.exam_scheduled_at !==
-                                                null
+                                                    ?.exam_scheduled_at !== null
                                             }
                                         />
                                     </td>
@@ -568,21 +613,32 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                                 agent.eligibility_attestation,
                                             )}
                                             labels={CONTRACTING_STAGE_LABELS}
-                                            classes={
-                                                CONTRACTING_STAGE_CLASSES
-                                            }
+                                            classes={CONTRACTING_STAGE_CLASSES}
                                         />
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            asChild
-                                        >
-                                            <Link href={show(agent.id)}>
-                                                Review
-                                            </Link>
-                                        </Button>
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setUpdatingAgentId(agent.id)
+                                                }
+                                            >
+                                                <Pencil />
+                                                Update
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                asChild
+                                            >
+                                                <Link href={show(agent.id)}>
+                                                    <Eye />
+                                                    Review
+                                                </Link>
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -590,7 +646,7 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                             {agents.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={11}
+                                        colSpan={12}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
                                         No agents found.
@@ -612,6 +668,22 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                     }}
                 />
             </div>
+
+            <OnboardingUpdateDialog
+                agent={updatingAgent}
+                open={updatingAgentId !== null}
+                onOpenChange={(open) =>
+                    setUpdatingAgentId(open ? updatingAgentId : null)
+                }
+            />
+
+            <OnboardingBulkUpdateDialog
+                selectedCount={selectedIds.length}
+                selectedIds={selectedIds}
+                open={bulkUpdateOpen}
+                onOpenChange={setBulkUpdateOpen}
+                onSuccess={() => setSelectedIds([])}
+            />
         </>
     );
 }

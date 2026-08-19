@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TrainingCompletion;
+use App\Models\User;
 use App\Notifications\TrainingDecisionNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,6 +60,62 @@ class TrainingReviewController extends Controller
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Decision recorded.')]);
+
+        return back();
+    }
+
+    /**
+     * Record the same decision (and, when rejecting, the same shared note)
+     * on a batch of agents' training completions at once. Agents who never
+     * submitted a completion, or whose completion is already at the target
+     * status, are silently skipped rather than failing the whole batch.
+     */
+    public function bulkDecision(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('onboarding.review'), 403);
+
+        $validated = $request->validate([
+            'user_ids' => ['required', 'array'],
+            'user_ids.*' => ['integer'],
+            'status' => ['required', Rule::in([
+                TrainingCompletion::STATUS_PENDING_REVIEW,
+                TrainingCompletion::STATUS_VERIFIED,
+                TrainingCompletion::STATUS_REJECTED,
+            ])],
+            'note' => [Rule::requiredIf($request->input('status') === TrainingCompletion::STATUS_REJECTED), 'nullable', 'string', 'max:2000'],
+        ]);
+
+        $updated = 0;
+
+        $users = User::whereIn('id', $validated['user_ids'])
+            ->with('trainingCompletion')
+            ->get();
+
+        foreach ($users as $user) {
+            $completion = $user->trainingCompletion;
+
+            if (! $completion || $completion->status === $validated['status']) {
+                continue;
+            }
+
+            $completion->update([
+                'status' => $validated['status'],
+                'note' => $validated['note'] ?? null,
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+            ]);
+
+            if ($validated['status'] !== TrainingCompletion::STATUS_PENDING_REVIEW) {
+                $user->notify(new TrainingDecisionNotification($validated['status'], $validated['note'] ?? null));
+            }
+
+            $updated++;
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => trans_choice(':count training completion updated.|:count training completions updated.', $updated, ['count' => $updated]),
+        ]);
 
         return back();
     }

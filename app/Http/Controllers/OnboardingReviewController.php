@@ -25,7 +25,12 @@ class OnboardingReviewController extends Controller
 
         $agents = User::query()
             ->role('agent')
-            ->with(['eligibilityAttestation', 'trainingCompletion', 'licenseSubmission', 'ahipCertification'])
+            ->with([
+                'eligibilityAttestation.reviewer',
+                'trainingCompletion.reviewer',
+                'licenseSubmission.reviewer',
+                'ahipCertification.reviewer',
+            ])
             ->when($search !== '', fn ($query) => $query->where(
                 fn ($query) => $query
                     ->where('name', 'like', "%{$search}%")

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EligibilityAttestation;
+use App\Models\User;
 use App\Notifications\EligibilityDecisionNotification;
 use App\Support\ContractingStages;
 use App\Support\LinesOfAuthority;
@@ -68,6 +69,61 @@ class EligibilityReviewController extends Controller
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Decision recorded.')]);
+
+        return back();
+    }
+
+    /**
+     * Record the same decision on a batch of agents' attestations at once.
+     * Agents who never submitted an attestation, or whose attestation is
+     * already at the target status, are silently skipped rather than
+     * failing the whole batch.
+     */
+    public function bulkDecision(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('onboarding.review'), 403);
+
+        $validated = $request->validate([
+            'user_ids' => ['required', 'array'],
+            'user_ids.*' => ['integer'],
+            'status' => ['required', Rule::in([
+                EligibilityAttestation::STATUS_PENDING,
+                EligibilityAttestation::STATUS_CLEARED,
+                EligibilityAttestation::STATUS_FLAGGED_FOR_WAIVER,
+                EligibilityAttestation::STATUS_NOT_ELIGIBLE,
+            ])],
+        ]);
+
+        $updated = 0;
+
+        $users = User::whereIn('id', $validated['user_ids'])
+            ->with('eligibilityAttestation')
+            ->get();
+
+        foreach ($users as $user) {
+            $attestation = $user->eligibilityAttestation;
+
+            if (! $attestation || $attestation->status === $validated['status']) {
+                continue;
+            }
+
+            $attestation->update([
+                'status' => $validated['status'],
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+            ]);
+
+            if (! in_array($validated['status'], EligibilityAttestation::UNDER_REVIEW_STATUSES, true)) {
+                $user->notify(new EligibilityDecisionNotification($validated['status']));
+            }
+
+            $updated++;
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => trans_choice(':count attestation updated.|:count attestations updated.', $updated, ['count' => $updated]),
+        ]);
 
         return back();
     }
