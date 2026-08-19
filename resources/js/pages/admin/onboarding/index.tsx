@@ -50,6 +50,36 @@ const TRAINING_BADGE_CLASSES: Record<string, string> = {
         'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
 };
 
+const LICENSE_STATUS_LABELS: Record<string, string> = {
+    pending_review: 'Pending review',
+    verified: 'Verified',
+    rejected: 'Rejected',
+};
+
+const LICENSE_BADGE_CLASSES: Record<string, string> = {
+    pending_review:
+        'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
+    verified:
+        'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+    rejected:
+        'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+};
+
+const AHIP_STATUS_LABELS: Record<string, string> = {
+    pending_review: 'Pending review',
+    verified: 'Verified',
+    rejected: 'Rejected',
+};
+
+const AHIP_BADGE_CLASSES: Record<string, string> = {
+    pending_review:
+        'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
+    verified:
+        'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+    rejected:
+        'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+};
+
 const NOT_SUBMITTED_CLASSES =
     'border-transparent bg-muted text-muted-foreground';
 
@@ -85,8 +115,12 @@ type AgentRow = {
         status: string;
         enrollment_completed_at: string | null;
         exam_scheduled_at: string | null;
+        fingerprinting_completed_at: string | null;
+        license_application_submitted_at: string | null;
     } | null;
     training_completion: { status: string } | null;
+    license_submission: { status: string } | null;
+    ahip_certification: { status: string } | null;
 };
 
 function CompletionBadge({
@@ -127,6 +161,8 @@ type Filters = {
     search: string;
     eligibility_status: string;
     training_status: string;
+    license_status: string;
+    ahip_status: string;
 };
 
 type Props = {
@@ -255,6 +291,72 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                             )}
                         </SelectContent>
                     </Select>
+
+                    <Select
+                        value={
+                            filters.license_status === ''
+                                ? 'all'
+                                : filters.license_status
+                        }
+                        onValueChange={(status) =>
+                            applyFilters(
+                                {
+                                    license_status:
+                                        status === 'all' ? '' : status,
+                                },
+                                filters,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-56">
+                            <SelectValue placeholder="License copy status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                All license copy statuses
+                            </SelectItem>
+                            {Object.entries(LICENSE_STATUS_LABELS).map(
+                                ([status, label]) => (
+                                    <SelectItem key={status} value={status}>
+                                        {label}
+                                    </SelectItem>
+                                ),
+                            )}
+                        </SelectContent>
+                    </Select>
+
+                    <Select
+                        value={
+                            filters.ahip_status === ''
+                                ? 'all'
+                                : filters.ahip_status
+                        }
+                        onValueChange={(status) =>
+                            applyFilters(
+                                {
+                                    ahip_status:
+                                        status === 'all' ? '' : status,
+                                },
+                                filters,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-56">
+                            <SelectValue placeholder="AHIP cert status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                All AHIP cert statuses
+                            </SelectItem>
+                            {Object.entries(AHIP_STATUS_LABELS).map(
+                                ([status, label]) => (
+                                    <SelectItem key={status} value={status}>
+                                        {label}
+                                    </SelectItem>
+                                ),
+                            )}
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div className="overflow-x-auto rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
@@ -273,6 +375,18 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                 </th>
                                 <th className="px-4 py-3 font-medium">
                                     Exam Scheduled
+                                </th>
+                                <th className="px-4 py-3 font-medium">
+                                    Fingerprinting
+                                </th>
+                                <th className="px-4 py-3 font-medium">
+                                    License App
+                                </th>
+                                <th className="px-4 py-3 font-medium">
+                                    License Copy
+                                </th>
+                                <th className="px-4 py-3 font-medium">
+                                    AHIP Cert
                                 </th>
                                 <th className="px-4 py-3 font-medium">
                                     <span className="sr-only">Actions</span>
@@ -339,6 +453,56 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                             }
                                         />
                                     </td>
+                                    <td className="px-4 py-3">
+                                        <CompletionBadge
+                                            label="Completed"
+                                            completedAt={
+                                                agent.eligibility_attestation
+                                                    ?.fingerprinting_completed_at ??
+                                                null
+                                            }
+                                            ready={
+                                                agent.eligibility_attestation
+                                                    ?.exam_scheduled_at !==
+                                                null
+                                            }
+                                        />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <CompletionBadge
+                                            label="Submitted"
+                                            completedAt={
+                                                agent.eligibility_attestation
+                                                    ?.license_application_submitted_at ??
+                                                null
+                                            }
+                                            ready={
+                                                agent.eligibility_attestation
+                                                    ?.fingerprinting_completed_at !==
+                                                null
+                                            }
+                                        />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <StatusBadge
+                                            status={
+                                                agent.license_submission
+                                                    ?.status ?? null
+                                            }
+                                            labels={LICENSE_STATUS_LABELS}
+                                            classes={LICENSE_BADGE_CLASSES}
+                                        />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <StatusBadge
+                                            status={
+                                                agent.ahip_certification
+                                                    ?.status ?? null
+                                            }
+                                            labels={AHIP_STATUS_LABELS}
+                                            classes={AHIP_BADGE_CLASSES}
+                                        />
+                                    </td>
                                     <td className="px-4 py-3 text-right">
                                         <Button
                                             variant="outline"
@@ -356,7 +520,7 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                             {agents.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={6}
+                                        colSpan={10}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
                                         No agents found.
@@ -373,6 +537,8 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                         search: filters.search,
                         eligibility_status: filters.eligibility_status,
                         training_status: filters.training_status,
+                        license_status: filters.license_status,
+                        ahip_status: filters.ahip_status,
                     }}
                 />
             </div>

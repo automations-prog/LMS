@@ -121,4 +121,36 @@ class EligibilityController extends Controller
 
         return redirect()->route('dashboard');
     }
+
+    /**
+     * Record that the agent has completed fingerprinting/background check.
+     * Only meaningful — and only allowed — once their state exam has been
+     * scheduled.
+     */
+    public function completeFingerprinting(Request $request): RedirectResponse
+    {
+        $attestation = $request->user()->eligibilityAttestation;
+
+        abort_unless($attestation?->exam_scheduled_at !== null, 403);
+
+        $attestation->update(['fingerprinting_completed_at' => now()]);
+
+        return redirect()->route('dashboard');
+    }
+
+    /**
+     * Record that the agent has submitted their license application. Only
+     * meaningful — and only allowed — once fingerprinting has been
+     * completed.
+     */
+    public function submitLicenseApplication(Request $request): RedirectResponse
+    {
+        $attestation = $request->user()->eligibilityAttestation;
+
+        abort_unless($attestation?->fingerprinting_completed_at !== null, 403);
+
+        $attestation->update(['license_application_submitted_at' => now()]);
+
+        return redirect()->route('dashboard');
+    }
 }

@@ -7,6 +7,8 @@ import {
     CheckCircle2,
     CircleCheck,
     CircleX,
+    FileCheck2,
+    Fingerprint,
     FileText,
     Flag,
     MapPin,
@@ -15,7 +17,9 @@ import {
     ShieldCheck,
 } from 'lucide-react';
 import { useState } from 'react';
+import AhipCertificationReviewController from '@/actions/App/Http/Controllers/AhipCertificationReviewController';
 import EligibilityReviewController from '@/actions/App/Http/Controllers/EligibilityReviewController';
+import LicenseReviewController from '@/actions/App/Http/Controllers/LicenseReviewController';
 import TrainingReviewController from '@/actions/App/Http/Controllers/TrainingReviewController';
 import InputError from '@/components/input-error';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -98,6 +102,56 @@ const TRAINING_DECISION_OPTIONS: {
     { value: 'verified', label: 'Verified', icon: CircleCheck },
 ];
 
+const LICENSE_STATUS_LABELS: Record<string, string> = {
+    pending_review: 'Pending review',
+    verified: 'Verified',
+    rejected: 'Rejected',
+};
+
+const LICENSE_ACTIVE_CLASSES: Record<string, string> = {
+    pending_review:
+        'border-transparent bg-slate-600 text-white hover:bg-slate-600 dark:bg-slate-500',
+    rejected:
+        'border-transparent bg-red-600 text-white hover:bg-red-600 dark:bg-red-500',
+    verified:
+        'border-transparent bg-emerald-600 text-white hover:bg-emerald-600 dark:bg-emerald-500',
+};
+
+const LICENSE_DECISION_OPTIONS: {
+    value: string;
+    label: string;
+    icon: typeof Calendar;
+}[] = [
+    { value: 'pending_review', label: 'Pending review', icon: Calendar },
+    { value: 'rejected', label: 'Rejected', icon: CircleX },
+    { value: 'verified', label: 'Verified', icon: CircleCheck },
+];
+
+const AHIP_STATUS_LABELS: Record<string, string> = {
+    pending_review: 'Pending review',
+    verified: 'Verified',
+    rejected: 'Rejected',
+};
+
+const AHIP_ACTIVE_CLASSES: Record<string, string> = {
+    pending_review:
+        'border-transparent bg-slate-600 text-white hover:bg-slate-600 dark:bg-slate-500',
+    rejected:
+        'border-transparent bg-red-600 text-white hover:bg-red-600 dark:bg-red-500',
+    verified:
+        'border-transparent bg-emerald-600 text-white hover:bg-emerald-600 dark:bg-emerald-500',
+};
+
+const AHIP_DECISION_OPTIONS: {
+    value: string;
+    label: string;
+    icon: typeof Calendar;
+}[] = [
+    { value: 'pending_review', label: 'Pending review', icon: Calendar },
+    { value: 'rejected', label: 'Rejected', icon: CircleX },
+    { value: 'verified', label: 'Verified', icon: CircleCheck },
+];
+
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
 });
@@ -143,6 +197,8 @@ type EligibilityAttestation = {
     line_of_authority: string | null;
     exam_scheduled_at: string | null;
     proctoring_type: string | null;
+    fingerprinting_completed_at: string | null;
+    license_application_submitted_at: string | null;
     created_at: string;
     reviewed_at: string | null;
     reviewer: { name: string } | null;
@@ -157,12 +213,32 @@ type TrainingCompletion = {
     reviewer: { name: string } | null;
 };
 
+type LicenseSubmission = {
+    id: number;
+    status: string;
+    note: string | null;
+    created_at: string;
+    reviewed_at: string | null;
+    reviewer: { name: string } | null;
+};
+
+type AhipCertification = {
+    id: number;
+    status: string;
+    note: string | null;
+    created_at: string;
+    reviewed_at: string | null;
+    reviewer: { name: string } | null;
+};
+
 type Agent = {
     id: number;
     name: string;
     email: string;
     eligibility_attestation: EligibilityAttestation | null;
     training_completion: TrainingCompletion | null;
+    license_submission: LicenseSubmission | null;
+    ahip_certification: AhipCertification | null;
 };
 
 type Props = {
@@ -179,6 +255,12 @@ export default function OnboardingShow({ agent }: Props) {
     const [clickedTrainingStatus, setClickedTrainingStatus] = useState<
         string | null
     >(null);
+    const [clickedLicenseStatus, setClickedLicenseStatus] = useState<
+        string | null
+    >(null);
+    const [clickedAhipStatus, setClickedAhipStatus] = useState<string | null>(
+        null,
+    );
     const getInitials = useInitials();
 
     const [lineOfAuthority, setLineOfAuthority] = useState(
@@ -190,6 +272,8 @@ export default function OnboardingShow({ agent }: Props) {
 
     const attestation = agent.eligibility_attestation;
     const completion = agent.training_completion;
+    const submission = agent.license_submission;
+    const certification = agent.ahip_certification;
 
     return (
         <>
@@ -864,6 +948,469 @@ export default function OnboardingShow({ agent }: Props) {
                             )}
                         </CardContent>
                     </Card>
+
+                    <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-4">
+                                <CardTitle>Fingerprinting</CardTitle>
+                                <Badge
+                                    variant="outline"
+                                    className={
+                                        attestation?.fingerprinting_completed_at
+                                            ? 'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+                                            : 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
+                                    }
+                                >
+                                    {attestation?.fingerprinting_completed_at
+                                        ? 'Completed'
+                                        : 'Not yet'}
+                                </Badge>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent>
+                            <Field
+                                icon={Fingerprint}
+                                label="Fingerprinting / background check status"
+                                value={
+                                    attestation?.fingerprinting_completed_at ? (
+                                        `Completed on ${dateFormatter.format(
+                                            new Date(
+                                                attestation.fingerprinting_completed_at,
+                                            ),
+                                        )}`
+                                    ) : (
+                                        <span className="text-muted-foreground">
+                                            Not yet completed
+                                        </span>
+                                    )
+                                }
+                            />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-4">
+                                <CardTitle>License Application</CardTitle>
+                                <Badge
+                                    variant="outline"
+                                    className={
+                                        attestation?.license_application_submitted_at
+                                            ? 'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+                                            : 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
+                                    }
+                                >
+                                    {attestation?.license_application_submitted_at
+                                        ? 'Submitted'
+                                        : 'Not yet'}
+                                </Badge>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent>
+                            <Field
+                                icon={FileCheck2}
+                                label="License application status"
+                                value={
+                                    attestation?.license_application_submitted_at ? (
+                                        `Submitted on ${dateFormatter.format(
+                                            new Date(
+                                                attestation.license_application_submitted_at,
+                                            ),
+                                        )}`
+                                    ) : (
+                                        <span className="text-muted-foreground">
+                                            Not yet submitted
+                                        </span>
+                                    )
+                                }
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {attestation?.license_application_submitted_at && (
+                    <>
+                    <Card className="lg:col-span-2">
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-4">
+                                <CardTitle>License Copy</CardTitle>
+                                {submission && (
+                                    <Badge variant="outline">
+                                        {LICENSE_STATUS_LABELS[
+                                            submission.status
+                                        ] ?? submission.status}
+                                    </Badge>
+                                )}
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="space-y-6">
+                            {!submission ? (
+                                <NotSubmitted label="License copy" />
+                            ) : (
+                                <>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <a
+                                            href={
+                                                LicenseReviewController.document(
+                                                    submission.id,
+                                                ).url
+                                            }
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <FileText />
+                                            View license copy
+                                        </a>
+                                    </Button>
+
+                                    {submission.note && (
+                                        <>
+                                            <Separator />
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Note
+                                                </p>
+                                                <p
+                                                    className={
+                                                        submission.status ===
+                                                        'rejected'
+                                                            ? 'mt-1 rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive'
+                                                            : 'mt-1 text-sm'
+                                                    }
+                                                >
+                                                    {submission.note}
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <Separator />
+
+                                    <p className="text-xs text-muted-foreground">
+                                        Submitted{' '}
+                                        {dateFormatter.format(
+                                            new Date(submission.created_at),
+                                        )}
+                                    </p>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="h-fit">
+                        <CardHeader>
+                            <CardTitle>License Copy decision</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                A note is required when rejecting.
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            {!submission ? (
+                                <NotSubmitted label="Nothing to decide —" />
+                            ) : (
+                                <Form
+                                    {...LicenseReviewController.decision.form(
+                                        submission.id,
+                                    )}
+                                    className="space-y-5"
+                                >
+                                    {({ processing, errors }) => (
+                                        <>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="license-note">
+                                                    Note
+                                                </Label>
+                                                <Textarea
+                                                    id="license-note"
+                                                    name="note"
+                                                    rows={3}
+                                                    defaultValue={
+                                                        submission.note ?? ''
+                                                    }
+                                                />
+                                                <InputError
+                                                    message={errors.note}
+                                                />
+                                            </div>
+
+                                            <div className="flex flex-col gap-3">
+                                                {LICENSE_DECISION_OPTIONS.map(
+                                                    ({
+                                                        value,
+                                                        label,
+                                                        icon: Icon,
+                                                    }) => {
+                                                        const isActive =
+                                                            submission.status ===
+                                                            value;
+
+                                                        return (
+                                                            <Button
+                                                                key={value}
+                                                                type="submit"
+                                                                name="status"
+                                                                value={value}
+                                                                variant="outline"
+                                                                size="lg"
+                                                                className={
+                                                                    isActive
+                                                                        ? `w-full justify-start ${LICENSE_ACTIVE_CLASSES[value]}`
+                                                                        : 'w-full justify-start'
+                                                                }
+                                                                disabled={
+                                                                    processing ||
+                                                                    isActive
+                                                                }
+                                                                onClick={() =>
+                                                                    setClickedLicenseStatus(
+                                                                        value,
+                                                                    )
+                                                                }
+                                                            >
+                                                                {processing &&
+                                                                clickedLicenseStatus ===
+                                                                    value ? (
+                                                                    <Spinner />
+                                                                ) : (
+                                                                    <Icon />
+                                                                )}
+                                                                {label}
+                                                            </Button>
+                                                        );
+                                                    },
+                                                )}
+                                            </div>
+
+                                            {submission.reviewer && (
+                                                <>
+                                                    <Separator />
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Last reviewed by{' '}
+                                                        <span className="font-medium text-foreground">
+                                                            {
+                                                                submission
+                                                                    .reviewer
+                                                                    .name
+                                                            }
+                                                        </span>
+                                                        {submission.reviewed_at && (
+                                                            <>
+                                                                {' '}
+                                                                on{' '}
+                                                                {dateFormatter.format(
+                                                                    new Date(
+                                                                        submission.reviewed_at,
+                                                                    ),
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+                                </Form>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {submission?.status === 'verified' && (
+                    <>
+                    <Card className="lg:col-span-2">
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-4">
+                                <CardTitle>AHIP Certification</CardTitle>
+                                {certification && (
+                                    <Badge variant="outline">
+                                        {AHIP_STATUS_LABELS[
+                                            certification.status
+                                        ] ?? certification.status}
+                                    </Badge>
+                                )}
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="space-y-6">
+                            {!certification ? (
+                                <NotSubmitted label="AHIP completion certificate" />
+                            ) : (
+                                <>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <a
+                                            href={
+                                                AhipCertificationReviewController.document(
+                                                    certification.id,
+                                                ).url
+                                            }
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <FileText />
+                                            View certificate
+                                        </a>
+                                    </Button>
+
+                                    {certification.note && (
+                                        <>
+                                            <Separator />
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Note
+                                                </p>
+                                                <p
+                                                    className={
+                                                        certification.status ===
+                                                        'rejected'
+                                                            ? 'mt-1 rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive'
+                                                            : 'mt-1 text-sm'
+                                                    }
+                                                >
+                                                    {certification.note}
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <Separator />
+
+                                    <p className="text-xs text-muted-foreground">
+                                        Submitted{' '}
+                                        {dateFormatter.format(
+                                            new Date(
+                                                certification.created_at,
+                                            ),
+                                        )}
+                                    </p>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="h-fit">
+                        <CardHeader>
+                            <CardTitle>
+                                AHIP Certification decision
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                A note is required when rejecting.
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            {!certification ? (
+                                <NotSubmitted label="Nothing to decide —" />
+                            ) : (
+                                <Form
+                                    {...AhipCertificationReviewController.decision.form(
+                                        certification.id,
+                                    )}
+                                    className="space-y-5"
+                                >
+                                    {({ processing, errors }) => (
+                                        <>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="ahip-note">
+                                                    Note
+                                                </Label>
+                                                <Textarea
+                                                    id="ahip-note"
+                                                    name="note"
+                                                    rows={3}
+                                                    defaultValue={
+                                                        certification.note ??
+                                                        ''
+                                                    }
+                                                />
+                                                <InputError
+                                                    message={errors.note}
+                                                />
+                                            </div>
+
+                                            <div className="flex flex-col gap-3">
+                                                {AHIP_DECISION_OPTIONS.map(
+                                                    ({
+                                                        value,
+                                                        label,
+                                                        icon: Icon,
+                                                    }) => {
+                                                        const isActive =
+                                                            certification.status ===
+                                                            value;
+
+                                                        return (
+                                                            <Button
+                                                                key={value}
+                                                                type="submit"
+                                                                name="status"
+                                                                value={value}
+                                                                variant="outline"
+                                                                size="lg"
+                                                                className={
+                                                                    isActive
+                                                                        ? `w-full justify-start ${AHIP_ACTIVE_CLASSES[value]}`
+                                                                        : 'w-full justify-start'
+                                                                }
+                                                                disabled={
+                                                                    processing ||
+                                                                    isActive
+                                                                }
+                                                                onClick={() =>
+                                                                    setClickedAhipStatus(
+                                                                        value,
+                                                                    )
+                                                                }
+                                                            >
+                                                                {processing &&
+                                                                clickedAhipStatus ===
+                                                                    value ? (
+                                                                    <Spinner />
+                                                                ) : (
+                                                                    <Icon />
+                                                                )}
+                                                                {label}
+                                                            </Button>
+                                                        );
+                                                    },
+                                                )}
+                                            </div>
+
+                                            {certification.reviewer && (
+                                                <>
+                                                    <Separator />
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Last reviewed by{' '}
+                                                        <span className="font-medium text-foreground">
+                                                            {
+                                                                certification
+                                                                    .reviewer
+                                                                    .name
+                                                            }
+                                                        </span>
+                                                        {certification.reviewed_at && (
+                                                            <>
+                                                                {' '}
+                                                                on{' '}
+                                                                {dateFormatter.format(
+                                                                    new Date(
+                                                                        certification.reviewed_at,
+                                                                    ),
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+                                </Form>
+                            )}
+                        </CardContent>
+                    </Card>
+                    </>
+                    )}
+                    </>
+                    )}
                     </>
                     )}
                 </div>

@@ -2,10 +2,14 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { Clock } from 'lucide-react';
 import { useState } from 'react';
 import EligibilityController from '@/actions/App/Http/Controllers/EligibilityController';
+import AhipCertificationCard from '@/components/ahip-certification-card';
 import CompleteXcelTrainingCard from '@/components/complete-xcel-training-card';
+import FingerprintingCard from '@/components/fingerprinting-card';
 import Heading from '@/components/heading';
 import HowToEnrollCard from '@/components/how-to-enroll-card';
 import ScheduleStateExamCard from '@/components/schedule-state-exam-card';
+import SubmitLicenseApplicationCard from '@/components/submit-license-application-card';
+import SubmitLicenseCopyCard from '@/components/submit-license-copy-card';
 import { dashboard } from '@/routes';
 import type { Auth } from '@/types';
 
@@ -15,6 +19,12 @@ type Props = {
     trainingStatus: 'pending_review' | 'verified' | 'rejected' | null;
     trainingNote: string | null;
     examScheduled: boolean;
+    fingerprintingCompleted: boolean;
+    licenseApplicationSubmitted: boolean;
+    licenseStatus: 'pending_review' | 'verified' | 'rejected' | null;
+    licenseNote: string | null;
+    ahipStatus: 'pending_review' | 'verified' | 'rejected' | null;
+    ahipNote: string | null;
 };
 
 export default function DashboardAgent({
@@ -23,6 +33,12 @@ export default function DashboardAgent({
     trainingStatus,
     trainingNote,
     examScheduled,
+    fingerprintingCompleted,
+    licenseApplicationSubmitted,
+    licenseStatus,
+    licenseNote,
+    ahipStatus,
+    ahipNote,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const [markingDone, setMarkingDone] = useState(false);
@@ -46,6 +62,32 @@ export default function DashboardAgent({
         router.post(
             EligibilityController.scheduleExam.url(),
             { proctoring_type: proctoringType },
+            {
+                preserveScroll: true,
+                onFinish: () => setMarkingDone(false),
+            },
+        );
+    }
+
+    function markFingerprintingDone() {
+        setMarkingDone(true);
+
+        router.post(
+            EligibilityController.completeFingerprinting.url(),
+            undefined,
+            {
+                preserveScroll: true,
+                onFinish: () => setMarkingDone(false),
+            },
+        );
+    }
+
+    function markLicenseApplicationSubmitted() {
+        setMarkingDone(true);
+
+        router.post(
+            EligibilityController.submitLicenseApplication.url(),
+            undefined,
             {
                 preserveScroll: true,
                 onFinish: () => setMarkingDone(false),
@@ -87,34 +129,78 @@ export default function DashboardAgent({
                     </p>
                 </div>
 
-                {eligibilityStatus === 'cleared' && !enrollmentCompleted && (
-                    <div className="max-w-2xl">
-                        <HowToEnrollCard
-                            onMarkAsDone={markEnrollmentDone}
-                            markingDone={markingDone}
-                        />
-                    </div>
-                )}
+                <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-6">
+                    {eligibilityStatus === 'cleared' &&
+                        !enrollmentCompleted && (
+                            <div className="w-full">
+                                <HowToEnrollCard
+                                    onMarkAsDone={markEnrollmentDone}
+                                    markingDone={markingDone}
+                                />
+                            </div>
+                        )}
 
-                {eligibilityStatus === 'cleared' &&
-                    enrollmentCompleted &&
-                    trainingStatus !== 'verified' && (
-                        <div className="max-w-2xl">
-                            <CompleteXcelTrainingCard
-                                trainingStatus={trainingStatus}
-                                trainingNote={trainingNote}
+                    {eligibilityStatus === 'cleared' &&
+                        enrollmentCompleted &&
+                        trainingStatus !== 'verified' && (
+                            <div className="w-full">
+                                <CompleteXcelTrainingCard
+                                    trainingStatus={trainingStatus}
+                                    trainingNote={trainingNote}
+                                />
+                            </div>
+                        )}
+
+                    {trainingStatus === 'verified' && !examScheduled && (
+                        <div className="w-full">
+                            <ScheduleStateExamCard
+                                onMarkAsDone={markExamScheduled}
+                                markingDone={markingDone}
                             />
                         </div>
                     )}
 
-                {trainingStatus === 'verified' && !examScheduled && (
-                    <div className="max-w-2xl">
-                        <ScheduleStateExamCard
-                            onMarkAsDone={markExamScheduled}
-                            markingDone={markingDone}
-                        />
-                    </div>
-                )}
+                    {examScheduled && !fingerprintingCompleted && (
+                        <div className="w-full">
+                            <FingerprintingCard
+                                onMarkAsDone={markFingerprintingDone}
+                                markingDone={markingDone}
+                            />
+                        </div>
+                    )}
+
+                    {fingerprintingCompleted &&
+                        !licenseApplicationSubmitted && (
+                            <div className="w-full">
+                                <SubmitLicenseApplicationCard
+                                    onMarkAsDone={
+                                        markLicenseApplicationSubmitted
+                                    }
+                                    markingDone={markingDone}
+                                />
+                            </div>
+                        )}
+
+                    {licenseApplicationSubmitted &&
+                        licenseStatus !== 'verified' && (
+                            <div className="w-full">
+                                <SubmitLicenseCopyCard
+                                    licenseStatus={licenseStatus}
+                                    licenseNote={licenseNote}
+                                />
+                            </div>
+                        )}
+
+                    {licenseStatus === 'verified' &&
+                        ahipStatus !== 'verified' && (
+                            <div className="w-full">
+                                <AhipCertificationCard
+                                    ahipStatus={ahipStatus}
+                                    ahipNote={ahipNote}
+                                />
+                            </div>
+                        )}
+                </div>
             </div>
         </>
     );

@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\AhipCertification;
 use App\Models\EligibilityAttestation;
+use App\Models\LicenseSubmission;
 use App\Models\TrainingCompletion;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -222,6 +224,98 @@ test('the onboarding list and detail page report exam scheduling', function () {
         ->get(route('onboarding.show', $notYetScheduled))
         ->assertInertia(fn ($page) => $page->where(
             'agent.eligibility_attestation.exam_scheduled_at',
+            null,
+        ));
+});
+
+test('the onboarding list and detail page report license submission status', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $withoutLicense = User::factory()->create(['created_at' => now()->subMinute()]);
+    $withoutLicense->assignRole('agent');
+    EligibilityAttestation::factory()->for($withoutLicense)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+
+    $withLicense = User::factory()->create(['created_at' => now()]);
+    $withLicense->assignRole('agent');
+    EligibilityAttestation::factory()->for($withLicense)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+    LicenseSubmission::factory()->for($withLicense)->create([
+        'status' => LicenseSubmission::STATUS_VERIFIED,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where('agents.data.0.license_submission.status', 'verified')
+            ->where('agents.data.1.license_submission', null));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.index', ['license_status' => 'verified']))
+        ->assertInertia(fn ($page) => $page
+            ->has('agents.data', 1)
+            ->where('agents.data.0.id', $withLicense->id));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.show', $withLicense))
+        ->assertInertia(fn ($page) => $page->where(
+            'agent.license_submission.status',
+            'verified',
+        ));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.show', $withoutLicense))
+        ->assertInertia(fn ($page) => $page->where(
+            'agent.license_submission',
+            null,
+        ));
+});
+
+test('the onboarding list and detail page report AHIP certification status', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $withoutAhip = User::factory()->create(['created_at' => now()->subMinute()]);
+    $withoutAhip->assignRole('agent');
+    EligibilityAttestation::factory()->for($withoutAhip)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+
+    $withAhip = User::factory()->create(['created_at' => now()]);
+    $withAhip->assignRole('agent');
+    EligibilityAttestation::factory()->for($withAhip)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+    AhipCertification::factory()->for($withAhip)->create([
+        'status' => AhipCertification::STATUS_VERIFIED,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where('agents.data.0.ahip_certification.status', 'verified')
+            ->where('agents.data.1.ahip_certification', null));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.index', ['ahip_status' => 'verified']))
+        ->assertInertia(fn ($page) => $page
+            ->has('agents.data', 1)
+            ->where('agents.data.0.id', $withAhip->id));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.show', $withAhip))
+        ->assertInertia(fn ($page) => $page->where(
+            'agent.ahip_certification.status',
+            'verified',
+        ));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.show', $withoutAhip))
+        ->assertInertia(fn ($page) => $page->where(
+            'agent.ahip_certification',
             null,
         ));
 });

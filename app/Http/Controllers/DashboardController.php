@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AhipCertification;
 use App\Models\EligibilityAttestation;
+use App\Models\LicenseSubmission;
 use App\Models\TrainingCompletion;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -112,6 +114,8 @@ class DashboardController extends Controller
     {
         $attestation = $request->user()->eligibilityAttestation;
         $training = $request->user()->trainingCompletion;
+        $license = $request->user()->licenseSubmission;
+        $ahip = $request->user()->ahipCertification;
 
         return Inertia::render('dashboard-agent', [
             'eligibilityStatus' => in_array($attestation?->status, EligibilityAttestation::UNDER_REVIEW_STATUSES, true)
@@ -121,6 +125,12 @@ class DashboardController extends Controller
             'trainingStatus' => $training?->status,
             'trainingNote' => $training?->status === TrainingCompletion::STATUS_REJECTED ? $training->note : null,
             'examScheduled' => $attestation?->exam_scheduled_at !== null,
+            'fingerprintingCompleted' => $attestation?->fingerprinting_completed_at !== null,
+            'licenseApplicationSubmitted' => $attestation?->license_application_submitted_at !== null,
+            'licenseStatus' => $license?->status,
+            'licenseNote' => $license?->status === LicenseSubmission::STATUS_REJECTED ? $license->note : null,
+            'ahipStatus' => $ahip?->status,
+            'ahipNote' => $ahip?->status === AhipCertification::STATUS_REJECTED ? $ahip->note : null,
         ]);
     }
 }

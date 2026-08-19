@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('line_of_authority')->nullable();
             $table->timestamp('exam_scheduled_at')->nullable();
             $table->string('proctoring_type')->nullable();
+            $table->timestamp('fingerprinting_completed_at')->nullable();
+            $table->timestamp('license_application_submitted_at')->nullable();
             $table->timestamps();
         });
     }

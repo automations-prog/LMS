@@ -24,6 +24,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $line_of_authority
  * @property Carbon|null $exam_scheduled_at
  * @property string|null $proctoring_type
+ * @property Carbon|null $fingerprinting_completed_at
+ * @property Carbon|null $license_application_submitted_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -42,6 +44,8 @@ use Illuminate\Support\Carbon;
     'line_of_authority',
     'exam_scheduled_at',
     'proctoring_type',
+    'fingerprinting_completed_at',
+    'license_application_submitted_at',
 ])]
 class EligibilityAttestation extends Model
 {
@@ -78,6 +82,8 @@ class EligibilityAttestation extends Model
             'reviewed_at' => 'datetime',
             'enrollment_completed_at' => 'datetime',
             'exam_scheduled_at' => 'datetime',
+            'fingerprinting_completed_at' => 'datetime',
+            'license_application_submitted_at' => 'datetime',
         ];
     }
 
