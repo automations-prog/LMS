@@ -1,13 +1,16 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft,
+    Building2,
     Calendar,
+    CalendarClock,
     CheckCircle2,
     CircleCheck,
     CircleX,
     FileText,
     Flag,
     MapPin,
+    Monitor,
     ShieldAlert,
     ShieldCheck,
 } from 'lucide-react';
@@ -59,6 +62,15 @@ const LINE_OF_AUTHORITY_OPTIONS: { value: string; label: string; price: string }
     { value: 'life', label: 'Life only', price: '$34.95' },
     { value: 'health', label: 'Health only', price: '$34.95' },
     { value: 'life_and_health', label: 'Life and health', price: '$39.95' },
+];
+
+const PROCTORING_TYPE_OPTIONS: {
+    value: string;
+    label: string;
+    icon: typeof Building2;
+}[] = [
+    { value: 'in_person', label: 'In-person', icon: Building2 },
+    { value: 'remote', label: 'Remote', icon: Monitor },
 ];
 
 const TRAINING_STATUS_LABELS: Record<string, string> = {
@@ -129,6 +141,8 @@ type EligibilityAttestation = {
     work_authorization_path: string | null;
     enrollment_completed_at: string | null;
     line_of_authority: string | null;
+    exam_scheduled_at: string | null;
+    proctoring_type: string | null;
     created_at: string;
     reviewed_at: string | null;
     reviewer: { name: string } | null;
@@ -169,6 +183,9 @@ export default function OnboardingShow({ agent }: Props) {
 
     const [lineOfAuthority, setLineOfAuthority] = useState(
         agent.eligibility_attestation?.line_of_authority ?? '',
+    );
+    const [proctoringType, setProctoringType] = useState(
+        agent.eligibility_attestation?.proctoring_type ?? '',
     );
 
     const attestation = agent.eligibility_attestation;
@@ -717,6 +734,133 @@ export default function OnboardingShow({ agent }: Props) {
                                         </>
                                     )}
                                 </Form>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-4">
+                                <CardTitle>Exam</CardTitle>
+                                <Badge
+                                    variant="outline"
+                                    className={
+                                        attestation?.exam_scheduled_at
+                                            ? 'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+                                            : 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
+                                    }
+                                >
+                                    {attestation?.exam_scheduled_at
+                                        ? 'Scheduled'
+                                        : 'Not yet'}
+                                </Badge>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="space-y-6">
+                            <Field
+                                icon={CalendarClock}
+                                label="State exam status"
+                                value={
+                                    attestation?.exam_scheduled_at ? (
+                                        `Scheduled on ${dateFormatter.format(
+                                            new Date(
+                                                attestation.exam_scheduled_at,
+                                            ),
+                                        )}`
+                                    ) : (
+                                        <span className="text-muted-foreground">
+                                            Not yet scheduled
+                                        </span>
+                                    )
+                                }
+                            />
+
+                            {attestation && (
+                                <>
+                                    <Separator />
+
+                                    <Form
+                                        {...EligibilityReviewController.updateExamSchedule.form(
+                                            attestation.id,
+                                        )}
+                                        className="space-y-3"
+                                    >
+                                        {({ processing, errors }) => (
+                                            <>
+                                                <div className="grid w-full gap-2">
+                                                    <Label>
+                                                        Proctoring type
+                                                    </Label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {PROCTORING_TYPE_OPTIONS.map(
+                                                            (option) => (
+                                                                <button
+                                                                    key={
+                                                                        option.value
+                                                                    }
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setProctoringType(
+                                                                            option.value,
+                                                                        )
+                                                                    }
+                                                                    aria-pressed={
+                                                                        proctoringType ===
+                                                                        option.value
+                                                                    }
+                                                                    className={
+                                                                        proctoringType ===
+                                                                        option.value
+                                                                            ? 'flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-3 py-2.5 text-left ring-1 ring-primary'
+                                                                            : 'flex items-center gap-2 rounded-md border px-3 py-2.5 text-left hover:border-primary/50'
+                                                                    }
+                                                                >
+                                                                    <option.icon className="size-4 shrink-0 text-muted-foreground" />
+                                                                    <span className="text-sm font-medium">
+                                                                        {
+                                                                            option.label
+                                                                        }
+                                                                    </span>
+                                                                </button>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                    <input
+                                                        type="hidden"
+                                                        name="proctoring_type"
+                                                        value={
+                                                            proctoringType
+                                                        }
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            errors.proctoring_type
+                                                        }
+                                                    />
+                                                </div>
+                                                {proctoringType !==
+                                                    (attestation.proctoring_type ??
+                                                        '') && (
+                                                    <div className="flex justify-start">
+                                                        <Button
+                                                            type="submit"
+                                                            disabled={
+                                                                processing ||
+                                                                !proctoringType
+                                                            }
+                                                        >
+                                                            {processing && (
+                                                                <Spinner />
+                                                            )}
+                                                            Save
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Form>
+                                </>
                             )}
                         </CardContent>
                     </Card>

@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEligibilityAttestationRequest;
 use App\Models\EligibilityAttestation;
+use App\Models\TrainingCompletion;
 use App\Support\LinesOfAuthority;
+use App\Support\ProctoringTypes;
 use App\Support\UsStates;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,6 +94,29 @@ class EligibilityController extends Controller
         $attestation->update([
             'enrollment_completed_at' => now(),
             'line_of_authority' => $validated['line_of_authority'],
+        ]);
+
+        return redirect()->route('dashboard');
+    }
+
+    /**
+     * Record that the agent has scheduled their state exam. Only meaningful
+     * — and only allowed — once their XCEL training certificate has been
+     * verified.
+     */
+    public function scheduleExam(Request $request): RedirectResponse
+    {
+        $training = $request->user()->trainingCompletion;
+
+        abort_unless($training?->status === TrainingCompletion::STATUS_VERIFIED, 403);
+
+        $validated = $request->validate([
+            'proctoring_type' => ['required', Rule::in(ProctoringTypes::ALL)],
+        ]);
+
+        $request->user()->eligibilityAttestation->update([
+            'exam_scheduled_at' => now(),
+            'proctoring_type' => $validated['proctoring_type'],
         ]);
 
         return redirect()->route('dashboard');

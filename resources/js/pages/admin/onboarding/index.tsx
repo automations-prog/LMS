@@ -84,29 +84,32 @@ type AgentRow = {
     eligibility_attestation: {
         status: string;
         enrollment_completed_at: string | null;
+        exam_scheduled_at: string | null;
     } | null;
     training_completion: { status: string } | null;
 };
 
-function EnrollmentBadge({
-    status,
-    enrollmentCompletedAt,
+function CompletionBadge({
+    label,
+    completedAt,
+    ready,
 }: {
-    status: string | null;
-    enrollmentCompletedAt: string | null;
+    label: string;
+    completedAt: string | null;
+    ready: boolean;
 }) {
-    if (enrollmentCompletedAt) {
+    if (completedAt) {
         return (
             <Badge
                 variant="outline"
                 className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
             >
-                Enrolled
+                {label}
             </Badge>
         );
     }
 
-    if (status === 'cleared') {
+    if (ready) {
         return (
             <Badge
                 variant="outline"
@@ -269,6 +272,9 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                     XCEL Training
                                 </th>
                                 <th className="px-4 py-3 font-medium">
+                                    Exam Scheduled
+                                </th>
+                                <th className="px-4 py-3 font-medium">
                                     <span className="sr-only">Actions</span>
                                 </th>
                             </tr>
@@ -296,15 +302,16 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                         />
                                     </td>
                                     <td className="px-4 py-3">
-                                        <EnrollmentBadge
-                                            status={
-                                                agent.eligibility_attestation
-                                                    ?.status ?? null
-                                            }
-                                            enrollmentCompletedAt={
+                                        <CompletionBadge
+                                            label="Enrolled"
+                                            completedAt={
                                                 agent.eligibility_attestation
                                                     ?.enrollment_completed_at ??
                                                 null
+                                            }
+                                            ready={
+                                                agent.eligibility_attestation
+                                                    ?.status === 'cleared'
                                             }
                                         />
                                     </td>
@@ -316,6 +323,20 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                             }
                                             labels={TRAINING_STATUS_LABELS}
                                             classes={TRAINING_BADGE_CLASSES}
+                                        />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <CompletionBadge
+                                            label="Scheduled"
+                                            completedAt={
+                                                agent.eligibility_attestation
+                                                    ?.exam_scheduled_at ??
+                                                null
+                                            }
+                                            ready={
+                                                agent.training_completion
+                                                    ?.status === 'verified'
+                                            }
                                         />
                                     </td>
                                     <td className="px-4 py-3 text-right">
@@ -335,7 +356,7 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                             {agents.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={5}
+                                        colSpan={6}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
                                         No agents found.

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EligibilityAttestation;
 use App\Notifications\EligibilityDecisionNotification;
 use App\Support\LinesOfAuthority;
+use App\Support\ProctoringTypes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -85,6 +86,25 @@ class EligibilityReviewController extends Controller
         $eligibilityAttestation->update($validated);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Line of authority updated.')]);
+
+        return back();
+    }
+
+    /**
+     * Set or correct the agent's chosen proctoring type. Independent of the
+     * eligibility decision — an admin can adjust this at any time.
+     */
+    public function updateExamSchedule(Request $request, EligibilityAttestation $eligibilityAttestation): RedirectResponse
+    {
+        Gate::authorize('review', $eligibilityAttestation);
+
+        $validated = $request->validate([
+            'proctoring_type' => ['required', Rule::in(ProctoringTypes::ALL)],
+        ]);
+
+        $eligibilityAttestation->update($validated);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Exam schedule updated.')]);
 
         return back();
     }

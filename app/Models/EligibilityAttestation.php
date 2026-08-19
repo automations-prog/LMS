@@ -22,6 +22,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $reviewed_at
  * @property Carbon|null $enrollment_completed_at
  * @property string|null $line_of_authority
+ * @property Carbon|null $exam_scheduled_at
+ * @property string|null $proctoring_type
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -38,6 +40,8 @@ use Illuminate\Support\Carbon;
     'reviewed_at',
     'enrollment_completed_at',
     'line_of_authority',
+    'exam_scheduled_at',
+    'proctoring_type',
 ])]
 class EligibilityAttestation extends Model
 {
@@ -73,6 +77,7 @@ class EligibilityAttestation extends Model
             'is_us_citizen' => 'boolean',
             'reviewed_at' => 'datetime',
             'enrollment_completed_at' => 'datetime',
+            'exam_scheduled_at' => 'datetime',
         ];
     }
 

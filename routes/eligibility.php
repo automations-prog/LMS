@@ -9,8 +9,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('onboarding/eligibility', [EligibilityController::class, 'store'])->name('eligibility.store');
     Route::get('onboarding/eligibility/pending', [EligibilityController::class, 'pending'])->name('eligibility.pending');
     Route::post('onboarding/eligibility/complete-enrollment', [EligibilityController::class, 'completeEnrollment'])->name('eligibility.complete-enrollment');
+    Route::post('onboarding/eligibility/schedule-exam', [EligibilityController::class, 'scheduleExam'])->name('eligibility.schedule-exam');
 
     Route::get('admin/eligibility/{eligibilityAttestation}/document', [EligibilityReviewController::class, 'document'])->name('eligibility.document');
     Route::post('admin/eligibility/{eligibilityAttestation}/decision', [EligibilityReviewController::class, 'decision'])->name('eligibility.decision');
     Route::post('admin/eligibility/{eligibilityAttestation}/line-of-authority', [EligibilityReviewController::class, 'updateLineOfAuthority'])->name('eligibility.line-of-authority.update');
+    Route::post('admin/eligibility/{eligibilityAttestation}/exam-schedule', [EligibilityReviewController::class, 'updateExamSchedule'])->name('eligibility.exam-schedule.update');
 });

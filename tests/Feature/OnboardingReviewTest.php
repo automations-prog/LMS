@@ -179,6 +179,53 @@ test('the onboarding list and detail page report enrollment completion', functio
         ));
 });
 
+test('the onboarding list and detail page report exam scheduling', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $notYetScheduled = User::factory()->create(['created_at' => now()->subMinute()]);
+    $notYetScheduled->assignRole('agent');
+    EligibilityAttestation::factory()->for($notYetScheduled)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+
+    $scheduled = User::factory()->create(['created_at' => now()]);
+    $scheduled->assignRole('agent');
+    EligibilityAttestation::factory()->for($scheduled)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+        'exam_scheduled_at' => now(),
+        'proctoring_type' => 'remote',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where(
+                'agents.data.0.eligibility_attestation.exam_scheduled_at',
+                fn ($value) => $value !== null,
+            )
+            ->where(
+                'agents.data.1.eligibility_attestation.exam_scheduled_at',
+                null,
+            ));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.show', $scheduled))
+        ->assertInertia(fn ($page) => $page
+            ->where(
+                'agent.eligibility_attestation.exam_scheduled_at',
+                fn ($value) => $value !== null,
+            )
+            ->where('agent.eligibility_attestation.proctoring_type', 'remote'));
+
+    $this->actingAs($admin)
+        ->get(route('onboarding.show', $notYetScheduled))
+        ->assertInertia(fn ($page) => $page->where(
+            'agent.eligibility_attestation.exam_scheduled_at',
+            null,
+        ));
+});
+
 test('onboarding.show 404s for a user who is not an agent', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');

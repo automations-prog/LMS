@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\EligibilityAttestation;
+use App\Models\TrainingCompletion;
 use App\Models\User;
 use App\Notifications\EligibilityDecisionNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -206,6 +207,74 @@ test('a guest cannot mark enrollment as done', function () {
         ->assertRedirect(route('login'));
 });
 
+test('an agent with verified training can schedule their exam with a proctoring type', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->for($agent)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+    TrainingCompletion::factory()->for($agent)->create([
+        'status' => TrainingCompletion::STATUS_VERIFIED,
+    ]);
+
+    $this->actingAs($agent)
+        ->post(route('eligibility.schedule-exam'), ['proctoring_type' => 'remote'])
+        ->assertRedirect(route('dashboard'));
+
+    $attestation->refresh();
+    expect($attestation->exam_scheduled_at)->not->toBeNull();
+    expect($attestation->proctoring_type)->toBe('remote');
+});
+
+test('scheduling the exam requires a valid proctoring type', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    EligibilityAttestation::factory()->for($agent)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+    TrainingCompletion::factory()->for($agent)->create([
+        'status' => TrainingCompletion::STATUS_VERIFIED,
+    ]);
+
+    $this->actingAs($agent)
+        ->post(route('eligibility.schedule-exam'), [])
+        ->assertInvalid('proctoring_type');
+
+    $this->actingAs($agent)
+        ->post(route('eligibility.schedule-exam'), ['proctoring_type' => 'not-a-real-option'])
+        ->assertInvalid('proctoring_type');
+});
+
+test('an agent without verified training cannot schedule their exam', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    EligibilityAttestation::factory()->for($agent)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+    TrainingCompletion::factory()->for($agent)->create();
+
+    $this->actingAs($agent)
+        ->post(route('eligibility.schedule-exam'), ['proctoring_type' => 'remote'])
+        ->assertForbidden();
+});
+
+test('an agent with no training completion cannot schedule their exam', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    EligibilityAttestation::factory()->for($agent)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+
+    $this->actingAs($agent)
+        ->post(route('eligibility.schedule-exam'), ['proctoring_type' => 'remote'])
+        ->assertForbidden();
+});
+
+test('a guest cannot schedule an exam', function () {
+    $this->post(route('eligibility.schedule-exam'))
+        ->assertRedirect(route('login'));
+});
+
 test('admin can decide a flagged case', function () {
     Notification::fake();
 
@@ -240,6 +309,9 @@ test('agent cannot access admin eligibility routes', function () {
         ->assertForbidden();
     $this->actingAs($agent)
         ->post(route('eligibility.line-of-authority.update', $attestation), ['line_of_authority' => 'life'])
+        ->assertForbidden();
+    $this->actingAs($agent)
+        ->post(route('eligibility.exam-schedule.update', $attestation), ['proctoring_type' => 'remote'])
         ->assertForbidden();
 });
 
@@ -276,6 +348,41 @@ test('updating line of authority requires a valid option', function () {
     $this->actingAs($admin)
         ->post(route('eligibility.line-of-authority.update', $attestation), ['line_of_authority' => 'not-a-real-option'])
         ->assertInvalid('line_of_authority');
+});
+
+test('admin can set and change an agent\'s proctoring type', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->for($agent)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+        'proctoring_type' => 'remote',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.exam-schedule.update', $attestation), ['proctoring_type' => 'in_person'])
+        ->assertRedirect();
+
+    expect($attestation->fresh()->proctoring_type)->toBe('in_person');
+});
+
+test('updating the exam schedule requires a valid proctoring type', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->for($agent)->create();
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.exam-schedule.update', $attestation), [])
+        ->assertInvalid('proctoring_type');
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.exam-schedule.update', $attestation), ['proctoring_type' => 'not-a-real-option'])
+        ->assertInvalid('proctoring_type');
 });
 
 test('a decision can be changed after it was already made', function () {

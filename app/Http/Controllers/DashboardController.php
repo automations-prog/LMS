@@ -120,6 +120,7 @@ class DashboardController extends Controller
             'enrollmentCompleted' => $attestation?->enrollment_completed_at !== null,
             'trainingStatus' => $training?->status,
             'trainingNote' => $training?->status === TrainingCompletion::STATUS_REJECTED ? $training->note : null,
+            'examScheduled' => $attestation?->exam_scheduled_at !== null,
         ]);
     }
 }

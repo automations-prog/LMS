@@ -25,6 +25,8 @@ return new class extends Migration
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamp('enrollment_completed_at')->nullable();
             $table->string('line_of_authority')->nullable();
+            $table->timestamp('exam_scheduled_at')->nullable();
+            $table->string('proctoring_type')->nullable();
             $table->timestamps();
         });
     }

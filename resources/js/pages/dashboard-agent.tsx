@@ -1,15 +1,11 @@
-import { Form, Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Clock } from 'lucide-react';
 import { useState } from 'react';
 import EligibilityController from '@/actions/App/Http/Controllers/EligibilityController';
-import TrainingController from '@/actions/App/Http/Controllers/TrainingController';
-import FileInput from '@/components/file-input';
+import CompleteXcelTrainingCard from '@/components/complete-xcel-training-card';
 import Heading from '@/components/heading';
 import HowToEnrollCard from '@/components/how-to-enroll-card';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import ScheduleStateExamCard from '@/components/schedule-state-exam-card';
 import { dashboard } from '@/routes';
 import type { Auth } from '@/types';
 
@@ -18,6 +14,7 @@ type Props = {
     enrollmentCompleted: boolean;
     trainingStatus: 'pending_review' | 'verified' | 'rejected' | null;
     trainingNote: string | null;
+    examScheduled: boolean;
 };
 
 export default function DashboardAgent({
@@ -25,6 +22,7 @@ export default function DashboardAgent({
     enrollmentCompleted,
     trainingStatus,
     trainingNote,
+    examScheduled,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const [markingDone, setMarkingDone] = useState(false);
@@ -35,6 +33,19 @@ export default function DashboardAgent({
         router.post(
             EligibilityController.completeEnrollment.url(),
             { line_of_authority: lineOfAuthority },
+            {
+                preserveScroll: true,
+                onFinish: () => setMarkingDone(false),
+            },
+        );
+    }
+
+    function markExamScheduled(proctoringType: string) {
+        setMarkingDone(true);
+
+        router.post(
+            EligibilityController.scheduleExam.url(),
+            { proctoring_type: proctoringType },
             {
                 preserveScroll: true,
                 onFinish: () => setMarkingDone(false),
@@ -88,104 +99,22 @@ export default function DashboardAgent({
                 {eligibilityStatus === 'cleared' &&
                     enrollmentCompleted &&
                     trainingStatus !== 'verified' && (
-                        <div className="max-w-2xl space-y-4 rounded-xl border border-sidebar-border/70 p-6 dark:border-sidebar-border">
-                            <Heading
-                                variant="small"
-                                title="Complete XCEL Training"
-                                description="Work through XCEL's 3-part training system at your own pace, on your own time — PreLicensing Course, Prep Review, and Exam Simulators. XCEL walks you through everything inside the platform."
+                        <div className="max-w-2xl">
+                            <CompleteXcelTrainingCard
+                                trainingStatus={trainingStatus}
+                                trainingNote={trainingNote}
                             />
-
-                            <div className="space-y-2 text-sm text-muted-foreground">
-                                <p>
-                                    <span className="font-medium text-foreground">
-                                        Target:
-                                    </span>{' '}
-                                    2–3 weeks. This is done on your own time,
-                                    outside work hours — it's an investment in
-                                    your own career. For reference, our
-                                    founder/leadership did this studying nights
-                                    only and finished in about 2 weeks. XCEL
-                                    gives you 30 days per phase as a safety net,
-                                    but that's not the pace to aim for — the
-                                    sooner you finish, the sooner you're earning
-                                    as a licensed agent.
-                                </p>
-                                <p>
-                                    <span className="font-medium text-foreground">
-                                        Timeline:
-                                    </span>{' '}
-                                    30 days for Part 1 (Pre-Licensing Course),
-                                    then a fresh 30 days for Parts 2–3 (Prep
-                                    Review + Exam Simulators) combined.
-                                </p>
-                                <p>
-                                    <span className="font-medium text-foreground">
-                                        Rule of thumb:
-                                    </span>{' '}
-                                    Chapter quizzes 70%+, Prep Review 80%+, Exam
-                                    Simulators 85%+ — if you're consistently
-                                    hitting those, you're ready for the real
-                                    exam.
-                                </p>
-                                <p>
-                                    Stuck on course content? Use XCEL's own
-                                    support/live help — that's what they're
-                                    there for. Stuck on access, deadlines, or
-                                    "am I actually ready?" — ask here in the
-                                    channel.
-                                </p>
-                            </div>
-
-                            {trainingStatus === 'pending_review' ? (
-                                <p className="text-sm font-medium">
-                                    Certificate submitted — awaiting
-                                    verification.
-                                </p>
-                            ) : (
-                                <>
-                                    {trainingStatus === 'rejected' &&
-                                        trainingNote && (
-                                            <p className="rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
-                                                Your certificate wasn't
-                                                verified: {trainingNote}
-                                            </p>
-                                        )}
-
-                                    <Form
-                                        {...TrainingController.store.form()}
-                                        resetOnSuccess
-                                    >
-                                        {({ processing, errors }) => (
-                                            <div className="space-y-2">
-                                                <Label htmlFor="certificate_file">
-                                                    Upload your training
-                                                    certificate
-                                                </Label>
-                                                <FileInput
-                                                    id="certificate_file"
-                                                    name="certificate_file"
-                                                    accept="application/pdf,image/*"
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors.certificate_file
-                                                    }
-                                                />
-                                                <Button
-                                                    type="submit"
-                                                    size="sm"
-                                                    disabled={processing}
-                                                >
-                                                    {processing && <Spinner />}
-                                                    Submit certificate
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </Form>
-                                </>
-                            )}
                         </div>
                     )}
+
+                {trainingStatus === 'verified' && !examScheduled && (
+                    <div className="max-w-2xl">
+                        <ScheduleStateExamCard
+                            onMarkAsDone={markExamScheduled}
+                            markingDone={markingDone}
+                        />
+                    </div>
+                )}
             </div>
         </>
     );

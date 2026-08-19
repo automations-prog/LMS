@@ -1,4 +1,4 @@
-import { Upload } from 'lucide-react';
+import { FileCheck2, Upload } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ export default function FileInput({
     accept,
     currentFileLabel,
     onChange,
+    disabled,
     ...props
 }: Props) {
     const [fileName, setFileName] = useState<string | null>(null);
@@ -23,10 +24,15 @@ export default function FileInput({
             htmlFor={id}
             className={cn(
                 'flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-input px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/50',
+                disabled && 'pointer-events-none opacity-60',
                 className,
             )}
         >
-            <Upload className="size-4 shrink-0" />
+            {fileName || currentFileLabel ? (
+                <FileCheck2 className="size-4 shrink-0 text-primary" />
+            ) : (
+                <Upload className="size-4 shrink-0" />
+            )}
             <span className="truncate">
                 {fileName ?? currentFileLabel ?? 'Choose a file...'}
             </span>
@@ -35,6 +41,7 @@ export default function FileInput({
                 type="file"
                 accept={accept}
                 className="sr-only"
+                disabled={disabled}
                 onChange={(e) => {
                     setFileName(e.target.files?.[0]?.name ?? null);
                     onChange?.(e);
