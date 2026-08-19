@@ -80,6 +80,24 @@ const AHIP_BADGE_CLASSES: Record<string, string> = {
         'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
 };
 
+const CONTRACTING_STAGE_LABELS: Record<string, string> = {
+    confirmed: 'License & cert confirmed',
+    forwarded: 'Forwarded for contracting',
+    issued: 'Appointment issued',
+    carrier_certs: 'Carrier certifications',
+};
+
+const CONTRACTING_STAGE_CLASSES: Record<string, string> = {
+    confirmed:
+        'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
+    forwarded:
+        'border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+    issued:
+        'border-transparent bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+    carrier_certs:
+        'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+};
+
 const NOT_SUBMITTED_CLASSES =
     'border-transparent bg-muted text-muted-foreground';
 
@@ -117,6 +135,7 @@ type AgentRow = {
         exam_scheduled_at: string | null;
         fingerprinting_completed_at: string | null;
         license_application_submitted_at: string | null;
+        contracting_stage: string | null;
     } | null;
     training_completion: { status: string } | null;
     license_submission: { status: string } | null;
@@ -389,6 +408,9 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                     AHIP Cert
                                 </th>
                                 <th className="px-4 py-3 font-medium">
+                                    Contracting Stage
+                                </th>
+                                <th className="px-4 py-3 font-medium">
                                     <span className="sr-only">Actions</span>
                                 </th>
                             </tr>
@@ -503,6 +525,21 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                                             classes={AHIP_BADGE_CLASSES}
                                         />
                                     </td>
+                                    <td className="px-4 py-3">
+                                        <StatusBadge
+                                            status={
+                                                agent.eligibility_attestation
+                                                    ?.contracting_stage ??
+                                                null
+                                            }
+                                            labels={
+                                                CONTRACTING_STAGE_LABELS
+                                            }
+                                            classes={
+                                                CONTRACTING_STAGE_CLASSES
+                                            }
+                                        />
+                                    </td>
                                     <td className="px-4 py-3 text-right">
                                         <Button
                                             variant="outline"
@@ -520,7 +557,7 @@ export default function OnboardingIndex({ agents, filters }: Props) {
                             {agents.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={10}
+                                        colSpan={11}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
                                         No agents found.

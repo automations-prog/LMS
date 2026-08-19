@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EligibilityAttestation;
 use App\Notifications\EligibilityDecisionNotification;
+use App\Support\ContractingStages;
 use App\Support\LinesOfAuthority;
 use App\Support\ProctoringTypes;
 use Illuminate\Http\RedirectResponse;
@@ -105,6 +106,25 @@ class EligibilityReviewController extends Controller
         $eligibilityAttestation->update($validated);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Exam schedule updated.')]);
+
+        return back();
+    }
+
+    /**
+     * Advance (or correct) the agent's carrier contracting & sales training
+     * stage. Purely admin-driven — the agent has no action to take here.
+     */
+    public function updateContractingStage(Request $request, EligibilityAttestation $eligibilityAttestation): RedirectResponse
+    {
+        Gate::authorize('review', $eligibilityAttestation);
+
+        $validated = $request->validate([
+            'contracting_stage' => ['required', Rule::in(ContractingStages::ALL)],
+        ]);
+
+        $eligibilityAttestation->update($validated);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Contracting stage updated.')]);
 
         return back();
     }

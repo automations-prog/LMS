@@ -313,6 +313,9 @@ test('agent cannot access admin eligibility routes', function () {
     $this->actingAs($agent)
         ->post(route('eligibility.exam-schedule.update', $attestation), ['proctoring_type' => 'remote'])
         ->assertForbidden();
+    $this->actingAs($agent)
+        ->post(route('eligibility.contracting-stage.update', $attestation), ['contracting_stage' => 'forwarded'])
+        ->assertForbidden();
 });
 
 test('admin can set and change an agent\'s line of authority', function () {
@@ -383,6 +386,42 @@ test('updating the exam schedule requires a valid proctoring type', function () 
     $this->actingAs($admin)
         ->post(route('eligibility.exam-schedule.update', $attestation), ['proctoring_type' => 'not-a-real-option'])
         ->assertInvalid('proctoring_type');
+});
+
+test('admin can advance an agent\'s contracting stage through all values', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->for($agent)->create([
+        'status' => EligibilityAttestation::STATUS_CLEARED,
+    ]);
+
+    foreach (['confirmed', 'forwarded', 'issued', 'carrier_certs'] as $stage) {
+        $this->actingAs($admin)
+            ->post(route('eligibility.contracting-stage.update', $attestation), ['contracting_stage' => $stage])
+            ->assertRedirect();
+
+        expect($attestation->fresh()->contracting_stage)->toBe($stage);
+    }
+});
+
+test('updating the contracting stage requires a valid value', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->for($agent)->create();
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.contracting-stage.update', $attestation), [])
+        ->assertInvalid('contracting_stage');
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.contracting-stage.update', $attestation), ['contracting_stage' => 'not-a-real-option'])
+        ->assertInvalid('contracting_stage');
 });
 
 test('a decision can be changed after it was already made', function () {

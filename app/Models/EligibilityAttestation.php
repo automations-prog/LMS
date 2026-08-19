@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $proctoring_type
  * @property Carbon|null $fingerprinting_completed_at
  * @property Carbon|null $license_application_submitted_at
+ * @property string|null $contracting_stage
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -46,6 +47,7 @@ use Illuminate\Support\Carbon;
     'proctoring_type',
     'fingerprinting_completed_at',
     'license_application_submitted_at',
+    'contracting_stage',
 ])]
 class EligibilityAttestation extends Model
 {

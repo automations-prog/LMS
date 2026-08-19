@@ -4,6 +4,7 @@ import { useState } from 'react';
 import EligibilityController from '@/actions/App/Http/Controllers/EligibilityController';
 import AhipCertificationCard from '@/components/ahip-certification-card';
 import CompleteXcelTrainingCard from '@/components/complete-xcel-training-card';
+import ContractingAndSalesTrainingCard from '@/components/contracting-and-sales-training-card';
 import FingerprintingCard from '@/components/fingerprinting-card';
 import Heading from '@/components/heading';
 import HowToEnrollCard from '@/components/how-to-enroll-card';
@@ -25,6 +26,12 @@ type Props = {
     licenseNote: string | null;
     ahipStatus: 'pending_review' | 'verified' | 'rejected' | null;
     ahipNote: string | null;
+    contractingStage:
+        | 'confirmed'
+        | 'forwarded'
+        | 'issued'
+        | 'carrier_certs'
+        | null;
 };
 
 export default function DashboardAgent({
@@ -39,6 +46,7 @@ export default function DashboardAgent({
     licenseNote,
     ahipStatus,
     ahipNote,
+    contractingStage,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const [markingDone, setMarkingDone] = useState(false);
@@ -119,8 +127,8 @@ export default function DashboardAgent({
         <>
             <Head title="Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-4">
-                <div>
+            <div className="relative flex h-full flex-1 flex-col p-4">
+                <div className="absolute top-4 left-4">
                     <h1 className="text-xl font-semibold">
                         Welcome back, {auth.user.name}
                     </h1>
@@ -129,7 +137,7 @@ export default function DashboardAgent({
                     </p>
                 </div>
 
-                <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-6">
+                <div className="mx-auto mt-16 flex w-full max-w-2xl flex-col items-center gap-6">
                     {eligibilityStatus === 'cleared' &&
                         !enrollmentCompleted && (
                             <div className="w-full">
@@ -200,6 +208,14 @@ export default function DashboardAgent({
                                 />
                             </div>
                         )}
+
+                    {contractingStage !== null && (
+                        <div className="w-full">
+                            <ContractingAndSalesTrainingCard
+                                contractingStage={contractingStage}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </>

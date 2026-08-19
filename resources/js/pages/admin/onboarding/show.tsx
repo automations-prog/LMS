@@ -152,6 +152,13 @@ const AHIP_DECISION_OPTIONS: {
     { value: 'verified', label: 'Verified', icon: CircleCheck },
 ];
 
+const CONTRACTING_STAGE_OPTIONS: { value: string; label: string }[] = [
+    { value: 'confirmed', label: 'License & cert confirmed' },
+    { value: 'forwarded', label: 'Forwarded for contracting' },
+    { value: 'issued', label: 'Appointment issued' },
+    { value: 'carrier_certs', label: 'Carrier certifications' },
+];
+
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
 });
@@ -199,6 +206,7 @@ type EligibilityAttestation = {
     proctoring_type: string | null;
     fingerprinting_completed_at: string | null;
     license_application_submitted_at: string | null;
+    contracting_stage: string | null;
     created_at: string;
     reviewed_at: string | null;
     reviewer: { name: string } | null;
@@ -268,6 +276,9 @@ export default function OnboardingShow({ agent }: Props) {
     );
     const [proctoringType, setProctoringType] = useState(
         agent.eligibility_attestation?.proctoring_type ?? '',
+    );
+    const [contractingStage, setContractingStage] = useState(
+        agent.eligibility_attestation?.contracting_stage ?? '',
     );
 
     const attestation = agent.eligibility_attestation;
@@ -1407,6 +1418,147 @@ export default function OnboardingShow({ agent }: Props) {
                             )}
                         </CardContent>
                     </Card>
+
+                    {certification?.status === 'verified' && (
+                    <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-4">
+                                <CardTitle>
+                                    Contracting & Sales Training
+                                </CardTitle>
+                                <Badge
+                                    variant="outline"
+                                    className={
+                                        attestation?.contracting_stage ===
+                                        'carrier_certs'
+                                            ? 'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+                                            : 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
+                                    }
+                                >
+                                    {CONTRACTING_STAGE_OPTIONS.find(
+                                        (option) =>
+                                            option.value ===
+                                            (attestation?.contracting_stage ??
+                                                'confirmed'),
+                                    )?.label ?? 'Confirmed'}
+                                </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                Purely admin-driven — the agent has nothing
+                                to submit here. Advance the stage as it
+                                happens outside the app.
+                            </p>
+                        </CardHeader>
+
+                        <CardContent className="space-y-4">
+                            <ul className="space-y-2 rounded-md border bg-muted/40 px-3 py-2.5">
+                                <li className="text-sm text-muted-foreground">
+                                    <span className="font-medium text-foreground">
+                                        Forwarded
+                                    </span>{' '}
+                                    — once you've sent the agent to carrier
+                                    contracting.
+                                </li>
+                                <li className="text-sm text-muted-foreground">
+                                    <span className="font-medium text-foreground">
+                                        Appointment issued
+                                    </span>{' '}
+                                    — once the carrier confirms their
+                                    appointment. Unlocks sales training on
+                                    the agent's dashboard.
+                                </li>
+                                <li className="text-sm text-muted-foreground">
+                                    <span className="font-medium text-foreground">
+                                        Carrier certifications
+                                    </span>{' '}
+                                    — only if that carrier requires
+                                    additional certs before the agent can
+                                    sell.
+                                </li>
+                            </ul>
+
+                            {attestation && (
+                                <Form
+                                    {...EligibilityReviewController.updateContractingStage.form(
+                                        attestation.id,
+                                    )}
+                                    className="space-y-3"
+                                >
+                                    {({ processing, errors }) => (
+                                        <>
+                                            <div className="grid w-full gap-2">
+                                                <Label>
+                                                    Contracting stage
+                                                </Label>
+                                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                                    {CONTRACTING_STAGE_OPTIONS.map(
+                                                        (option) => (
+                                                            <button
+                                                                key={
+                                                                    option.value
+                                                                }
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setContractingStage(
+                                                                        option.value,
+                                                                    )
+                                                                }
+                                                                aria-pressed={
+                                                                    contractingStage ===
+                                                                    option.value
+                                                                }
+                                                                className={
+                                                                    contractingStage ===
+                                                                    option.value
+                                                                        ? 'rounded-md border border-primary bg-primary/5 px-3 py-2 text-left ring-1 ring-primary'
+                                                                        : 'rounded-md border px-3 py-2 text-left hover:border-primary/50'
+                                                                }
+                                                            >
+                                                                <p className="text-sm font-medium">
+                                                                    {
+                                                                        option.label
+                                                                    }
+                                                                </p>
+                                                            </button>
+                                                        ),
+                                                    )}
+                                                </div>
+                                                <input
+                                                    type="hidden"
+                                                    name="contracting_stage"
+                                                    value={contractingStage}
+                                                />
+                                                <InputError
+                                                    message={
+                                                        errors.contracting_stage
+                                                    }
+                                                />
+                                            </div>
+                                            {contractingStage !==
+                                                (attestation.contracting_stage ??
+                                                    '') && (
+                                                <div className="flex justify-start">
+                                                    <Button
+                                                        type="submit"
+                                                        disabled={
+                                                            processing ||
+                                                            !contractingStage
+                                                        }
+                                                    >
+                                                        {processing && (
+                                                            <Spinner />
+                                                        )}
+                                                        Save
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </Form>
+                            )}
+                        </CardContent>
+                    </Card>
+                    )}
                     </>
                     )}
                     </>
