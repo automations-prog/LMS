@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AhipCertification;
+use App\Models\EligibilityAttestation;
 use App\Models\User;
 use App\Notifications\AhipCertificationDecisionNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -21,6 +22,7 @@ function ahipCertificateFile(string $name = 'ahip-certificate.pdf'): UploadedFil
 test('an agent with no record can submit an AHIP certificate', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($agent)->create();
 
     $this->actingAs($agent)
         ->post(route('ahip-certification.store'), ['certificate_file' => ahipCertificateFile()])
@@ -32,9 +34,19 @@ test('an agent with no record can submit an AHIP certificate', function () {
     Storage::disk('local')->assertExists($certification->certificate_path);
 });
 
+test('an agent cannot submit before eligibility is cleared', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+
+    $this->actingAs($agent)
+        ->post(route('ahip-certification.store'), ['certificate_file' => ahipCertificateFile()])
+        ->assertForbidden();
+});
+
 test('an agent cannot submit while pending review or verified', function () {
     $pendingAgent = User::factory()->create();
     $pendingAgent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($pendingAgent)->create();
     AhipCertification::factory()->for($pendingAgent)->create();
 
     $this->actingAs($pendingAgent)
@@ -43,6 +55,7 @@ test('an agent cannot submit while pending review or verified', function () {
 
     $verifiedAgent = User::factory()->create();
     $verifiedAgent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($verifiedAgent)->create();
     AhipCertification::factory()->for($verifiedAgent)->create([
         'status' => AhipCertification::STATUS_VERIFIED,
     ]);
@@ -55,6 +68,7 @@ test('an agent cannot submit while pending review or verified', function () {
 test('an agent can resubmit after a rejection, clearing the previous note', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($agent)->create();
     $certification = AhipCertification::factory()->rejected()->for($agent)->create();
     $oldPath = $certification->certificate_path;
     Storage::disk('local')->put($oldPath, 'old certificate contents');

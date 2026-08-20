@@ -44,4 +44,15 @@ class EligibilityAttestationFactory extends Factory
             'status' => EligibilityAttestation::STATUS_FLAGGED_FOR_WAIVER,
         ]);
     }
+
+    /**
+     * Indicate that the attestation has been cleared — the agent can now
+     * proceed to enrollment, training, license, and AHIP submissions.
+     */
+    public function cleared(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => EligibilityAttestation::STATUS_CLEARED,
+        ]);
+    }
 }

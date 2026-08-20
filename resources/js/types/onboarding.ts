@@ -24,6 +24,7 @@ export type EligibilityAttestation = {
     contracting_forwarded_at: string | null;
     contracting_issued_at: string | null;
     contracting_carrier_certs_at: string | null;
+    contracting_complete_at: string | null;
     created_at: string;
     reviewed_at: string | null;
     reviewer: { name: string } | null;

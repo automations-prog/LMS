@@ -33,6 +33,7 @@ return new class extends Migration
             $table->timestamp('contracting_forwarded_at')->nullable();
             $table->timestamp('contracting_issued_at')->nullable();
             $table->timestamp('contracting_carrier_certs_at')->nullable();
+            $table->timestamp('contracting_complete_at')->nullable();
             $table->timestamps();
         });
     }

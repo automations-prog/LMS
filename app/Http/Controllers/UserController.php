@@ -185,7 +185,7 @@ class UserController extends Controller
 
         $suspended = 0;
 
-        foreach (User::whereIn('id', $validated['user_ids'])->get() as $user) {
+        foreach (User::whereIn('id', $validated['user_ids'])->with('roles')->get() as $user) {
             // Same non-negotiable guards as the single-user action: skip
             // rather than fail the whole batch over one bad target.
             if ($request->user()->id === $user->id) {
@@ -222,7 +222,7 @@ class UserController extends Controller
 
         $deleted = 0;
 
-        foreach (User::whereIn('id', $validated['user_ids'])->get() as $user) {
+        foreach (User::whereIn('id', $validated['user_ids'])->with('roles')->get() as $user) {
             if ($request->user()->id === $user->id) {
                 continue;
             }

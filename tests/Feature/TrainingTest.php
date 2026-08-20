@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\EligibilityAttestation;
 use App\Models\TrainingCompletion;
 use App\Models\User;
 use App\Notifications\TrainingDecisionNotification;
@@ -21,6 +22,7 @@ function certificateFile(string $name = 'certificate.pdf'): UploadedFile
 test('an agent with no record can submit a certificate', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($agent)->create();
 
     $this->actingAs($agent)
         ->post(route('training.store'), ['certificate_file' => certificateFile()])
@@ -32,9 +34,19 @@ test('an agent with no record can submit a certificate', function () {
     Storage::disk('local')->assertExists($completion->certificate_path);
 });
 
+test('an agent cannot submit before eligibility is cleared', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+
+    $this->actingAs($agent)
+        ->post(route('training.store'), ['certificate_file' => certificateFile()])
+        ->assertForbidden();
+});
+
 test('an agent cannot submit while pending review or verified', function () {
     $pendingAgent = User::factory()->create();
     $pendingAgent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($pendingAgent)->create();
     TrainingCompletion::factory()->for($pendingAgent)->create();
 
     $this->actingAs($pendingAgent)
@@ -43,6 +55,7 @@ test('an agent cannot submit while pending review or verified', function () {
 
     $verifiedAgent = User::factory()->create();
     $verifiedAgent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($verifiedAgent)->create();
     TrainingCompletion::factory()->for($verifiedAgent)->create([
         'status' => TrainingCompletion::STATUS_VERIFIED,
     ]);
@@ -55,6 +68,7 @@ test('an agent cannot submit while pending review or verified', function () {
 test('an agent can resubmit after a rejection, clearing the previous note', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($agent)->create();
     $completion = TrainingCompletion::factory()->rejected()->for($agent)->create();
     $oldPath = $completion->certificate_path;
     Storage::disk('local')->put($oldPath, 'old certificate contents');

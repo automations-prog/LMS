@@ -15,13 +15,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -30,48 +24,6 @@ import {
     LICENSE_DECISION_OPTIONS,
     TRAINING_DECISION_OPTIONS,
 } from '@/lib/onboarding-decisions';
-
-type Category = 'eligibility' | 'training' | 'license' | 'ahip';
-
-const CATEGORIES: {
-    value: Category;
-    label: string;
-    options: { value: string; label: string }[];
-    hasNote: boolean;
-    bulkDecisionForm: () => ReturnType<
-        typeof EligibilityReviewController.bulkDecision.form
-    >;
-}[] = [
-    {
-        value: 'eligibility',
-        label: 'Eligibility',
-        options: ELIGIBILITY_DECISION_OPTIONS,
-        hasNote: false,
-        bulkDecisionForm: () => EligibilityReviewController.bulkDecision.form(),
-    },
-    {
-        value: 'training',
-        label: 'XCEL Training',
-        options: TRAINING_DECISION_OPTIONS,
-        hasNote: true,
-        bulkDecisionForm: () => TrainingReviewController.bulkDecision.form(),
-    },
-    {
-        value: 'license',
-        label: 'License Copy',
-        options: LICENSE_DECISION_OPTIONS,
-        hasNote: true,
-        bulkDecisionForm: () => LicenseReviewController.bulkDecision.form(),
-    },
-    {
-        value: 'ahip',
-        label: 'AHIP Certification',
-        options: AHIP_DECISION_OPTIONS,
-        hasNote: true,
-        bulkDecisionForm: () =>
-            AhipCertificationReviewController.bulkDecision.form(),
-    },
-];
 
 type Props = {
     selectedCount: number;
@@ -88,144 +40,309 @@ export default function OnboardingBulkUpdateDialog({
     onOpenChange,
     onSuccess,
 }: Props) {
-    const [categoryValue, setCategoryValue] = useState<Category>(
-        CATEGORIES[0].value,
+    // Same convention as onboarding-update-dialog.tsx: `processing` from a
+    // Form render-prop is shared by that whole <form>, not per-button — track
+    // which button was actually clicked so only that one shows a spinner
+    // while the request is in flight.
+    const [clickedEligibilityStatus, setClickedEligibilityStatus] = useState<
+        string | null
+    >(null);
+    const [clickedTrainingStatus, setClickedTrainingStatus] = useState<
+        string | null
+    >(null);
+    const [clickedLicenseStatus, setClickedLicenseStatus] = useState<
+        string | null
+    >(null);
+    const [clickedAhipStatus, setClickedAhipStatus] = useState<string | null>(
+        null,
     );
-    const [status, setStatus] = useState('');
 
-    const category = CATEGORIES.find((c) => c.value === categoryValue)!;
-
-    // Switching category invalidates whatever status was picked for the
-    // previous one — its options (and note requirement) don't carry over.
-    function handleCategoryChange(value: Category) {
-        setCategoryValue(value);
-        setStatus('');
-    }
-
-    function handleOpenChange(nextOpen: boolean) {
-        onOpenChange(nextOpen);
-
-        if (!nextOpen) {
-            setCategoryValue(CATEGORIES[0].value);
-            setStatus('');
-        }
+    function handleSuccess() {
+        onOpenChange(false);
+        onSuccess();
     }
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="gap-6">
-                <DialogHeader className="gap-1.5">
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+                <DialogHeader>
                     <DialogTitle>
                         Update {selectedCount} agent
                         {selectedCount === 1 ? '' : 's'}
                     </DialogTitle>
                     <p className="text-sm text-muted-foreground">
-                        Agents without a submission for the chosen category are
+                        Pick a status below to apply it to every selected agent.
+                        Agents without a submission for that category are
                         skipped.
                     </p>
                 </DialogHeader>
 
-                <Form
-                    key={categoryValue}
-                    {...category.bulkDecisionForm()}
-                    onSuccess={() => {
-                        handleOpenChange(false);
-                        onSuccess();
-                    }}
-                    className="space-y-5"
-                >
-                    {({ processing, errors }) => (
-                        <>
-                            {selectedIds.map((id) => (
-                                <input
-                                    key={id}
-                                    type="hidden"
-                                    name="user_ids[]"
-                                    value={id}
-                                />
-                            ))}
+                <div className="space-y-6">
+                    <section className="space-y-3">
+                        <h3 className="text-sm font-semibold">Eligibility</h3>
 
-                            <div className="grid gap-2.5">
-                                <Label>Category</Label>
-                                <Select
-                                    value={categoryValue}
-                                    onValueChange={(value) =>
-                                        handleCategoryChange(value as Category)
-                                    }
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {CATEGORIES.map((c) => (
-                                            <SelectItem
-                                                key={c.value}
-                                                value={c.value}
-                                            >
-                                                {c.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        <Form
+                            {...EligibilityReviewController.bulkDecision.form()}
+                            onSuccess={handleSuccess}
+                            className="space-y-3"
+                        >
+                            {({ processing }) => (
+                                <>
+                                    {selectedIds.map((id) => (
+                                        <input
+                                            key={id}
+                                            type="hidden"
+                                            name="user_ids[]"
+                                            value={id}
+                                        />
+                                    ))}
 
-                            <div className="grid gap-2.5">
-                                <Label htmlFor="bulk-status">
-                                    Set status to
-                                </Label>
-                                <Select
-                                    name="status"
-                                    value={status}
-                                    onValueChange={setStatus}
-                                >
-                                    <SelectTrigger
-                                        id="bulk-status"
-                                        className="w-full"
-                                    >
-                                        <SelectValue placeholder="Select a status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {category.options.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <InputError message={errors.status} />
-                            </div>
-
-                            {category.hasNote && status === 'rejected' && (
-                                <div className="grid gap-2.5">
-                                    <Label htmlFor="bulk-note">Note</Label>
-                                    <Textarea
-                                        id="bulk-note"
-                                        name="note"
-                                        rows={3}
-                                        placeholder="Applied to every selected agent's record."
-                                    />
-                                    <InputError message={errors.note} />
-                                </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {ELIGIBILITY_DECISION_OPTIONS.map(
+                                            ({ value, label, icon: Icon }) => (
+                                                <Button
+                                                    key={value}
+                                                    type="submit"
+                                                    name="status"
+                                                    value={value}
+                                                    variant="outline"
+                                                    className="justify-start"
+                                                    disabled={processing}
+                                                    onClick={() =>
+                                                        setClickedEligibilityStatus(
+                                                            value,
+                                                        )
+                                                    }
+                                                >
+                                                    {processing &&
+                                                    clickedEligibilityStatus ===
+                                                        value ? (
+                                                        <Spinner />
+                                                    ) : (
+                                                        <Icon />
+                                                    )}
+                                                    {label}
+                                                </Button>
+                                            ),
+                                        )}
+                                    </div>
+                                </>
                             )}
+                        </Form>
+                    </section>
 
-                            <DialogFooter className="gap-2 pt-2">
-                                <DialogClose asChild>
-                                    <Button variant="secondary">Cancel</Button>
-                                </DialogClose>
-                                <Button
-                                    type="submit"
-                                    disabled={processing || !status}
-                                >
-                                    {processing && <Spinner />}
-                                    Update
-                                </Button>
-                            </DialogFooter>
-                        </>
-                    )}
-                </Form>
+                    <Separator />
+
+                    <section className="space-y-3">
+                        <h3 className="text-sm font-semibold">XCEL Training</h3>
+
+                        <Form
+                            {...TrainingReviewController.bulkDecision.form()}
+                            onSuccess={handleSuccess}
+                            className="space-y-3"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    {selectedIds.map((id) => (
+                                        <input
+                                            key={id}
+                                            type="hidden"
+                                            name="user_ids[]"
+                                            value={id}
+                                        />
+                                    ))}
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="bulk-training-note">
+                                            Note
+                                        </Label>
+                                        <Textarea
+                                            id="bulk-training-note"
+                                            name="note"
+                                            rows={2}
+                                            placeholder="Required when rejecting — applied to every selected agent."
+                                        />
+                                        <InputError message={errors.note} />
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {TRAINING_DECISION_OPTIONS.map(
+                                            ({ value, label, icon: Icon }) => (
+                                                <Button
+                                                    key={value}
+                                                    type="submit"
+                                                    name="status"
+                                                    value={value}
+                                                    variant="outline"
+                                                    className="justify-start"
+                                                    disabled={processing}
+                                                    onClick={() =>
+                                                        setClickedTrainingStatus(
+                                                            value,
+                                                        )
+                                                    }
+                                                >
+                                                    {processing &&
+                                                    clickedTrainingStatus ===
+                                                        value ? (
+                                                        <Spinner />
+                                                    ) : (
+                                                        <Icon />
+                                                    )}
+                                                    {label}
+                                                </Button>
+                                            ),
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    </section>
+
+                    <Separator />
+
+                    <section className="space-y-3">
+                        <h3 className="text-sm font-semibold">License Copy</h3>
+
+                        <Form
+                            {...LicenseReviewController.bulkDecision.form()}
+                            onSuccess={handleSuccess}
+                            className="space-y-3"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    {selectedIds.map((id) => (
+                                        <input
+                                            key={id}
+                                            type="hidden"
+                                            name="user_ids[]"
+                                            value={id}
+                                        />
+                                    ))}
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="bulk-license-note">
+                                            Note
+                                        </Label>
+                                        <Textarea
+                                            id="bulk-license-note"
+                                            name="note"
+                                            rows={2}
+                                            placeholder="Required when rejecting — applied to every selected agent."
+                                        />
+                                        <InputError message={errors.note} />
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {LICENSE_DECISION_OPTIONS.map(
+                                            ({ value, label, icon: Icon }) => (
+                                                <Button
+                                                    key={value}
+                                                    type="submit"
+                                                    name="status"
+                                                    value={value}
+                                                    variant="outline"
+                                                    className="justify-start"
+                                                    disabled={processing}
+                                                    onClick={() =>
+                                                        setClickedLicenseStatus(
+                                                            value,
+                                                        )
+                                                    }
+                                                >
+                                                    {processing &&
+                                                    clickedLicenseStatus ===
+                                                        value ? (
+                                                        <Spinner />
+                                                    ) : (
+                                                        <Icon />
+                                                    )}
+                                                    {label}
+                                                </Button>
+                                            ),
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    </section>
+
+                    <Separator />
+
+                    <section className="space-y-3">
+                        <h3 className="text-sm font-semibold">
+                            AHIP Certification
+                        </h3>
+
+                        <Form
+                            {...AhipCertificationReviewController.bulkDecision.form()}
+                            onSuccess={handleSuccess}
+                            className="space-y-3"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    {selectedIds.map((id) => (
+                                        <input
+                                            key={id}
+                                            type="hidden"
+                                            name="user_ids[]"
+                                            value={id}
+                                        />
+                                    ))}
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="bulk-ahip-note">
+                                            Note
+                                        </Label>
+                                        <Textarea
+                                            id="bulk-ahip-note"
+                                            name="note"
+                                            rows={2}
+                                            placeholder="Required when rejecting — applied to every selected agent."
+                                        />
+                                        <InputError message={errors.note} />
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {AHIP_DECISION_OPTIONS.map(
+                                            ({ value, label, icon: Icon }) => (
+                                                <Button
+                                                    key={value}
+                                                    type="submit"
+                                                    name="status"
+                                                    value={value}
+                                                    variant="outline"
+                                                    className="justify-start"
+                                                    disabled={processing}
+                                                    onClick={() =>
+                                                        setClickedAhipStatus(
+                                                            value,
+                                                        )
+                                                    }
+                                                >
+                                                    {processing &&
+                                                    clickedAhipStatus ===
+                                                        value ? (
+                                                        <Spinner />
+                                                    ) : (
+                                                        <Icon />
+                                                    )}
+                                                    {label}
+                                                </Button>
+                                            ),
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    </section>
+                </div>
+
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="secondary">Close</Button>
+                    </DialogClose>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

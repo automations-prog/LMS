@@ -17,6 +17,7 @@ const CONTRACTING_STAGES = [
     { key: 'forwarded', title: 'Forwarded for contracting' },
     { key: 'issued', title: 'Appointment issued' },
     { key: 'carrier_certs', title: 'Carrier certifications, if required' },
+    { key: 'complete', title: 'Verified' },
 ];
 
 const SALES_TRAINING_TOPICS = [
@@ -33,6 +34,7 @@ type Props = {
         forwarded: boolean;
         issued: boolean;
         carrier_certs: boolean;
+        complete: boolean;
     };
 };
 
@@ -58,13 +60,19 @@ export default function ContractingAndSalesTrainingCard({
                     <h3 className="text-base font-medium">
                         Carrier contracting & sales training
                     </h3>
-                    <Badge variant="secondary">In progress</Badge>
+                    {contracting.complete ? (
+                        <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+                            <Check className="size-3" />
+                            Verified
+                        </Badge>
+                    ) : (
+                        <Badge variant="secondary">In progress</Badge>
+                    )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                     Licensed ≠ ready to sell. Once you're licensed and
-                    AHIP-certified, Pitch forwards you for contracting —
-                    then your manager walks you through sales training
-                    directly.
+                    AHIP-certified, Pitch forwards you for contracting — then
+                    your manager walks you through sales training directly.
                 </p>
             </CardHeader>
 
@@ -127,9 +135,9 @@ export default function ContractingAndSalesTrainingCard({
                     <div className="flex items-start gap-2">
                         <Clock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground">
-                            Contracting and appointment approval generally
-                            takes anywhere from a few days to a few weeks —
-                            build in buffer time.
+                            Contracting and appointment approval generally takes
+                            anywhere from a few days to a few weeks — build in
+                            buffer time.
                         </p>
                     </div>
                 </div>
@@ -147,9 +155,9 @@ export default function ContractingAndSalesTrainingCard({
                     </p>
                     <p className="mb-3 text-sm text-muted-foreground">
                         This is where you learn to actually sell. Your
-                        manager/coach walks you through each of these
-                        directly, with real call examples and practice
-                        before you're on your own.
+                        manager/coach walks you through each of these directly,
+                        with real call examples and practice before you're on
+                        your own.
                     </p>
                     <div className="grid grid-cols-1 gap-2">
                         {SALES_TRAINING_TOPICS.map(({ icon: Icon, label }) => (

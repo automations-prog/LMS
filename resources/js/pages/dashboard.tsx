@@ -32,6 +32,14 @@ type SignupPoint = {
     value: number;
 };
 
+type StageStatusPoint = {
+    key: string;
+    label: string;
+    pending_review: number;
+    verified: number;
+    rejected: number;
+};
+
 type Stats = {
     total_users: number;
     active_users: number;
@@ -43,6 +51,8 @@ type Charts = {
     users_by_role: DataPoint[];
     eligibility_by_status: DataPoint[];
     signups_per_day: SignupPoint[];
+    onboarding_stage_status: StageStatusPoint[];
+    contracting_funnel: DataPoint[];
 };
 
 type Props = {
@@ -84,6 +94,16 @@ const ELIGIBILITY_CHART_CONFIG = {
 
 const SIGNUPS_CHART_CONFIG = {
     value: { label: 'New users', color: 'var(--chart-1)' },
+} satisfies ChartConfig;
+
+const STAGE_STATUS_CHART_CONFIG = {
+    pending_review: { label: 'Pending review', color: 'var(--chart-1)' },
+    verified: { label: 'Verified', color: 'var(--chart-3)' },
+    rejected: { label: 'Rejected', color: 'var(--chart-4)' },
+} satisfies ChartConfig;
+
+const CONTRACTING_FUNNEL_CHART_CONFIG = {
+    value: { label: 'Agents', color: 'var(--chart-2)' },
 } satisfies ChartConfig;
 
 export default function Dashboard({ stats, charts }: Props) {
@@ -260,6 +280,115 @@ export default function Dashboard({ stats, charts }: Props) {
                                 </div>
                             ))}
                         </div>
+                    </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
+                        <p className="mb-4 text-sm font-medium">
+                            Onboarding review status by stage
+                        </p>
+                        <ChartContainer
+                            config={STAGE_STATUS_CHART_CONFIG}
+                            className="aspect-auto h-52 w-full"
+                        >
+                            <BarChart
+                                accessibilityLayer
+                                data={charts.onboarding_stage_status}
+                                margin={{ left: 12, right: 12 }}
+                            >
+                                <CartesianGrid vertical={false} />
+                                <XAxis
+                                    dataKey="label"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={8}
+                                />
+                                <YAxis
+                                    allowDecimals={false}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    width={24}
+                                />
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent />}
+                                />
+                                <Bar
+                                    dataKey="pending_review"
+                                    fill="var(--color-pending_review)"
+                                    radius={4}
+                                />
+                                <Bar
+                                    dataKey="verified"
+                                    fill="var(--color-verified)"
+                                    radius={4}
+                                />
+                                <Bar
+                                    dataKey="rejected"
+                                    fill="var(--color-rejected)"
+                                    radius={4}
+                                />
+                            </BarChart>
+                        </ChartContainer>
+                        <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-sm">
+                            {(
+                                Object.keys(
+                                    STAGE_STATUS_CHART_CONFIG,
+                                ) as (keyof typeof STAGE_STATUS_CHART_CONFIG)[]
+                            ).map((key) => (
+                                <div
+                                    key={key}
+                                    className="flex items-center gap-1.5"
+                                >
+                                    <span
+                                        className="size-2.5 rounded-full"
+                                        style={{
+                                            backgroundColor: `var(--color-${key})`,
+                                        }}
+                                    />
+                                    <span className="text-muted-foreground">
+                                        {STAGE_STATUS_CHART_CONFIG[key].label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
+                        <p className="mb-4 text-sm font-medium">
+                            Contracting funnel
+                        </p>
+                        <ChartContainer
+                            config={CONTRACTING_FUNNEL_CHART_CONFIG}
+                            className="mx-auto aspect-auto h-52 w-full"
+                        >
+                            <BarChart
+                                accessibilityLayer
+                                data={charts.contracting_funnel}
+                                layout="vertical"
+                                margin={{ left: 8 }}
+                            >
+                                <CartesianGrid horizontal={false} />
+                                <XAxis type="number" hide allowDecimals={false} />
+                                <YAxis
+                                    dataKey="label"
+                                    type="category"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    width={90}
+                                />
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent hideLabel />}
+                                />
+                                <Bar
+                                    dataKey="value"
+                                    fill="var(--color-value)"
+                                    radius={4}
+                                />
+                            </BarChart>
+                        </ChartContainer>
                     </div>
                 </div>
 

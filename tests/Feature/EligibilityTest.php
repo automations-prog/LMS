@@ -388,39 +388,96 @@ test('updating the exam schedule requires a valid proctoring type', function () 
         ->assertInvalid('proctoring_type');
 });
 
-test('admin can check contracting stages independently, in any order', function () {
+test('checking a contracting stage out of order is rejected', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
     $agent = User::factory()->create();
     $agent->assignRole('agent');
-    $attestation = EligibilityAttestation::factory()->for($agent)->create([
-        'status' => EligibilityAttestation::STATUS_CLEARED,
-    ]);
+    $attestation = EligibilityAttestation::factory()->cleared()->for($agent)->create();
 
-    // Check "issued" without touching "confirmed" or "forwarded" first.
+    // "issued" without "confirmed" or "forwarded" first.
     $this->actingAs($admin)
         ->post(route('eligibility.contracting-stages.update', $attestation), ['contracting_stages' => ['issued']])
-        ->assertRedirect();
+        ->assertInvalid('contracting_stages');
 
     $attestation->refresh();
     expect($attestation->contracting_confirmed_at)->toBeNull();
     expect($attestation->contracting_forwarded_at)->toBeNull();
-    expect($attestation->contracting_issued_at)->not->toBeNull();
-    expect($attestation->contracting_carrier_certs_at)->toBeNull();
+    expect($attestation->contracting_issued_at)->toBeNull();
 
-    // Now also check "confirmed" and "carrier_certs".
+    // "confirmed", "issued", "carrier_certs", "complete" — but "forwarded"
+    // is still missing, so "issued" (and everything after it) is invalid.
     $this->actingAs($admin)
         ->post(route('eligibility.contracting-stages.update', $attestation), [
-            'contracting_stages' => ['confirmed', 'issued', 'carrier_certs'],
+            'contracting_stages' => ['confirmed', 'issued', 'carrier_certs', 'complete'],
+        ])
+        ->assertInvalid('contracting_stages');
+
+    $attestation->refresh();
+    expect($attestation->contracting_confirmed_at)->toBeNull();
+});
+
+test('admin can check contracting stages in the full sequential order', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->cleared()->for($agent)->create();
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.contracting-stages.update', $attestation), [
+            'contracting_stages' => ['confirmed', 'forwarded', 'issued', 'carrier_certs', 'complete'],
         ])
         ->assertRedirect();
 
     $attestation->refresh();
     expect($attestation->contracting_confirmed_at)->not->toBeNull();
-    expect($attestation->contracting_forwarded_at)->toBeNull();
+    expect($attestation->contracting_forwarded_at)->not->toBeNull();
     expect($attestation->contracting_issued_at)->not->toBeNull();
     expect($attestation->contracting_carrier_certs_at)->not->toBeNull();
+    expect($attestation->contracting_complete_at)->not->toBeNull();
+});
+
+test('carrier certifications stay optional — complete does not require them', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->cleared()->for($agent)->create();
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.contracting-stages.update', $attestation), [
+            'contracting_stages' => ['confirmed', 'forwarded', 'issued', 'complete'],
+        ])
+        ->assertRedirect();
+
+    $attestation->refresh();
+    expect($attestation->contracting_issued_at)->not->toBeNull();
+    expect($attestation->contracting_carrier_certs_at)->toBeNull();
+    expect($attestation->contracting_complete_at)->not->toBeNull();
+});
+
+test('carrier certifications only require being forwarded, not issued', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->cleared()->for($agent)->create();
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.contracting-stages.update', $attestation), [
+            'contracting_stages' => ['confirmed', 'forwarded', 'carrier_certs'],
+        ])
+        ->assertRedirect();
+
+    $attestation->refresh();
+    expect($attestation->contracting_forwarded_at)->not->toBeNull();
+    expect($attestation->contracting_carrier_certs_at)->not->toBeNull();
+    expect($attestation->contracting_issued_at)->toBeNull();
 });
 
 test('an already-checked stage keeps its original timestamp when re-saved', function () {

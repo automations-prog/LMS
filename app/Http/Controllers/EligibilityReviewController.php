@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -168,11 +169,13 @@ class EligibilityReviewController extends Controller
 
     /**
      * Check or uncheck the agent's carrier contracting & sales training
-     * stages, independently of each other. Purely admin-driven — the agent
-     * has no action to take here.
+     * stages. Purely admin-driven — the agent has no action to take here.
      *
-     * Each stage in `ContractingStages::ALL` present in the submitted list
-     * gets stamped with `now()` the first time it's checked (re-saving an
+     * Stages must be checked in order per `ContractingStages::DEPENDENCIES`
+     * (confirmed -> forwarded -> issued -> complete); `carrier_certs` is an
+     * optional side branch that only requires `forwarded` and isn't itself
+     * required for `complete`. Each stage present in the submitted list gets
+     * stamped with `now()` the first time it's checked (re-saving an
      * already-checked stage leaves its original timestamp untouched);
      * anything absent from the list is cleared back to null.
      */
@@ -186,6 +189,14 @@ class EligibilityReviewController extends Controller
         ]);
 
         $checked = $validated['contracting_stages'] ?? [];
+
+        foreach (ContractingStages::DEPENDENCIES as $stage => $prerequisite) {
+            if (in_array($stage, $checked, true) && ! in_array($prerequisite, $checked, true)) {
+                throw ValidationException::withMessages([
+                    'contracting_stages' => "\"{$stage}\" can't be checked before \"{$prerequisite}\".",
+                ]);
+            }
+        }
 
         $updates = [];
 

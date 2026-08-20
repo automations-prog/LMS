@@ -31,6 +31,7 @@ type Props = {
         forwarded: boolean;
         issued: boolean;
         carrier_certs: boolean;
+        complete: boolean;
     } | null;
 };
 

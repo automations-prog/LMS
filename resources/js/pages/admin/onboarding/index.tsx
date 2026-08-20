@@ -89,6 +89,7 @@ const CONTRACTING_STAGE_LABELS: Record<string, string> = {
     forwarded: 'Forwarded for contracting',
     issued: 'Appointment issued',
     carrier_certs: 'Carrier certifications',
+    complete: 'Verified',
 };
 
 const CONTRACTING_STAGE_CLASSES: Record<string, string> = {
@@ -98,21 +99,25 @@ const CONTRACTING_STAGE_CLASSES: Record<string, string> = {
         'border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
     issued: 'border-transparent bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
     carrier_certs:
+        'border-transparent bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400',
+    complete:
         'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
 };
 
 const CONTRACTING_STAGE_ORDER: {
-    key: 'confirmed' | 'forwarded' | 'issued' | 'carrier_certs';
+    key: 'confirmed' | 'forwarded' | 'issued' | 'carrier_certs' | 'complete';
     column:
         | 'contracting_confirmed_at'
         | 'contracting_forwarded_at'
         | 'contracting_issued_at'
-        | 'contracting_carrier_certs_at';
+        | 'contracting_carrier_certs_at'
+        | 'contracting_complete_at';
 }[] = [
     { key: 'confirmed', column: 'contracting_confirmed_at' },
     { key: 'forwarded', column: 'contracting_forwarded_at' },
     { key: 'issued', column: 'contracting_issued_at' },
     { key: 'carrier_certs', column: 'contracting_carrier_certs_at' },
+    { key: 'complete', column: 'contracting_complete_at' },
 ];
 
 // Stages are independently checkable — the badge just reflects the
@@ -190,12 +195,16 @@ function CompletionBadge({
                 variant="outline"
                 className={ELIGIBILITY_BADGE_CLASSES.pending}
             >
-                Not yet
+                Pending
             </Badge>
         );
     }
 
-    return <span className="text-muted-foreground">—</span>;
+    return (
+        <Badge variant="outline" className={NOT_SUBMITTED_CLASSES}>
+            Blocked
+        </Badge>
+    );
 }
 
 type Filters = {

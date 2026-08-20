@@ -37,9 +37,11 @@ import {
     ELIGIBILITY_ACTIVE_CLASSES,
     ELIGIBILITY_DECISION_OPTIONS,
     ELIGIBILITY_STATUS_LABELS,
+    isContractingStageDisabled,
     LICENSE_ACTIVE_CLASSES,
     LICENSE_DECISION_OPTIONS,
     LICENSE_STATUS_LABELS,
+    toggleContractingStage,
     TRAINING_ACTIVE_CLASSES,
     TRAINING_DECISION_OPTIONS,
     TRAINING_STATUS_LABELS,
@@ -73,7 +75,8 @@ const CONTRACTING_STAGE_OPTIONS: {
         | 'contracting_confirmed_at'
         | 'contracting_forwarded_at'
         | 'contracting_issued_at'
-        | 'contracting_carrier_certs_at';
+        | 'contracting_carrier_certs_at'
+        | 'contracting_complete_at';
 }[] = [
     {
         value: 'confirmed',
@@ -94,6 +97,11 @@ const CONTRACTING_STAGE_OPTIONS: {
         value: 'carrier_certs',
         label: 'Carrier certifications',
         column: 'contracting_carrier_certs_at',
+    },
+    {
+        value: 'complete',
+        label: 'Verified',
+        column: 'contracting_complete_at',
     },
 ];
 
@@ -407,7 +415,7 @@ export default function OnboardingShow({ agent }: Props) {
                                 >
                                     {attestation?.enrollment_completed_at
                                         ? 'Enrolled'
-                                        : 'Not yet'}
+                                        : 'Pending'}
                                 </Badge>
                             </div>
                         </CardHeader>
@@ -738,7 +746,7 @@ export default function OnboardingShow({ agent }: Props) {
                                         >
                                             {attestation?.exam_scheduled_at
                                                 ? 'Scheduled'
-                                                : 'Not yet'}
+                                                : 'Pending'}
                                         </Badge>
                                     </div>
                                 </CardHeader>
@@ -867,7 +875,7 @@ export default function OnboardingShow({ agent }: Props) {
                                         >
                                             {attestation?.fingerprinting_completed_at
                                                 ? 'Completed'
-                                                : 'Not yet'}
+                                                : 'Pending'}
                                         </Badge>
                                     </div>
                                 </CardHeader>
@@ -909,7 +917,7 @@ export default function OnboardingShow({ agent }: Props) {
                                         >
                                             {attestation?.license_application_submitted_at
                                                 ? 'Submitted'
-                                                : 'Not yet'}
+                                                : 'Pending'}
                                         </Badge>
                                     </div>
                                 </CardHeader>
@@ -1381,7 +1389,7 @@ export default function OnboardingShow({ agent }: Props) {
                                                             <Badge
                                                                 variant="outline"
                                                                 className={
-                                                                    attestation?.contracting_carrier_certs_at
+                                                                    attestation?.contracting_complete_at
                                                                         ? 'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
                                                                         : 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
                                                                 }
@@ -1454,6 +1462,16 @@ export default function OnboardingShow({ agent }: Props) {
                                                                 before the agent
                                                                 can sell.
                                                             </li>
+                                                            <li className="text-sm text-muted-foreground">
+                                                                <span className="font-medium text-foreground">
+                                                                    Verified
+                                                                </span>{' '}
+                                                                — once the whole
+                                                                contracting &
+                                                                sales training
+                                                                process is
+                                                                finished.
+                                                            </li>
                                                         </ul>
 
                                                         {attestation && (
@@ -1510,17 +1528,35 @@ export default function OnboardingShow({ agent }: Props) {
                                                                                             checkedStages.includes(
                                                                                                 option.value,
                                                                                             );
+                                                                                        const isDisabled =
+                                                                                            !isChecked &&
+                                                                                            isContractingStageDisabled(
+                                                                                                checkedStages,
+                                                                                                option.value,
+                                                                                            );
 
                                                                                         return (
                                                                                             <label
                                                                                                 key={
                                                                                                     option.value
                                                                                                 }
-                                                                                                className="flex items-center gap-2 rounded-md border px-3 py-2 hover:border-primary/50"
+                                                                                                title={
+                                                                                                    isDisabled
+                                                                                                        ? 'Check the previous stage first'
+                                                                                                        : undefined
+                                                                                                }
+                                                                                                className={
+                                                                                                    isDisabled
+                                                                                                        ? 'flex items-center gap-2 rounded-md border px-3 py-2 opacity-50'
+                                                                                                        : 'flex items-center gap-2 rounded-md border px-3 py-2 hover:border-primary/50'
+                                                                                                }
                                                                                             >
                                                                                                 <Checkbox
                                                                                                     checked={
                                                                                                         isChecked
+                                                                                                    }
+                                                                                                    disabled={
+                                                                                                        isDisabled
                                                                                                     }
                                                                                                     onCheckedChange={(
                                                                                                         value,
@@ -1529,18 +1565,13 @@ export default function OnboardingShow({ agent }: Props) {
                                                                                                             (
                                                                                                                 current,
                                                                                                             ) =>
-                                                                                                                value
-                                                                                                                    ? [
-                                                                                                                          ...current,
-                                                                                                                          option.value,
-                                                                                                                      ]
-                                                                                                                    : current.filter(
-                                                                                                                          (
-                                                                                                                              stage,
-                                                                                                                          ) =>
-                                                                                                                              stage !==
-                                                                                                                              option.value,
-                                                                                                                      ),
+                                                                                                                toggleContractingStage(
+                                                                                                                    current,
+                                                                                                                    option.value,
+                                                                                                                    Boolean(
+                                                                                                                        value,
+                                                                                                                    ),
+                                                                                                                ),
                                                                                                         )
                                                                                                     }
                                                                                                 />

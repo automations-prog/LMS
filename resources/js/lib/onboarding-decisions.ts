@@ -121,3 +121,62 @@ export const AHIP_DECISION_OPTIONS: {
 export const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
 });
+
+// Mirrors App\Support\ContractingStages::DEPENDENCIES on the backend —
+// stage => the other stage that must already be checked before this one
+// can be. `confirmed` has no prerequisite. `carrier_certs` only needs
+// `forwarded`; it's an optional side branch, not required for `complete`.
+export const CONTRACTING_STAGE_DEPENDENCIES: Record<string, string> = {
+    forwarded: 'confirmed',
+    issued: 'forwarded',
+    carrier_certs: 'forwarded',
+    complete: 'issued',
+};
+
+/**
+ * Toggle a contracting stage on/off in a checked-stages list. Checking a
+ * stage just adds it; unchecking one also cascades to remove anything that
+ * (transitively) depends on it — e.g. unchecking `forwarded` also drops
+ * `issued`, `carrier_certs`, and `complete` — so the set submitted to the
+ * server is never left in an inconsistent, half-ordered state.
+ */
+export function toggleContractingStage(
+    current: string[],
+    stage: string,
+    checked: boolean,
+): string[] {
+    if (checked) {
+        return current.includes(stage) ? current : [...current, stage];
+    }
+
+    const toRemove = new Set([stage]);
+
+    let changed = true;
+    while (changed) {
+        changed = false;
+
+        for (const [dependent, prerequisite] of Object.entries(
+            CONTRACTING_STAGE_DEPENDENCIES,
+        )) {
+            if (toRemove.has(prerequisite) && !toRemove.has(dependent)) {
+                toRemove.add(dependent);
+                changed = true;
+            }
+        }
+    }
+
+    return current.filter((existing) => !toRemove.has(existing));
+}
+
+/**
+ * Whether a contracting stage's checkbox should be disabled because its
+ * prerequisite hasn't been checked yet.
+ */
+export function isContractingStageDisabled(
+    current: string[],
+    stage: string,
+): boolean {
+    const prerequisite = CONTRACTING_STAGE_DEPENDENCIES[stage];
+
+    return prerequisite !== undefined && !current.includes(prerequisite);
+}

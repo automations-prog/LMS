@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\EligibilityAttestation;
 use App\Models\LicenseSubmission;
 use App\Models\User;
 use App\Notifications\LicenseDecisionNotification;
@@ -21,6 +22,7 @@ function licenseFile(string $name = 'license.pdf'): UploadedFile
 test('an agent with no record can submit a license copy', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($agent)->create();
 
     $this->actingAs($agent)
         ->post(route('license.store'), ['license_file' => licenseFile()])
@@ -32,9 +34,19 @@ test('an agent with no record can submit a license copy', function () {
     Storage::disk('local')->assertExists($submission->license_path);
 });
 
+test('an agent cannot submit before eligibility is cleared', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+
+    $this->actingAs($agent)
+        ->post(route('license.store'), ['license_file' => licenseFile()])
+        ->assertForbidden();
+});
+
 test('an agent cannot submit while pending review or verified', function () {
     $pendingAgent = User::factory()->create();
     $pendingAgent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($pendingAgent)->create();
     LicenseSubmission::factory()->for($pendingAgent)->create();
 
     $this->actingAs($pendingAgent)
@@ -43,6 +55,7 @@ test('an agent cannot submit while pending review or verified', function () {
 
     $verifiedAgent = User::factory()->create();
     $verifiedAgent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($verifiedAgent)->create();
     LicenseSubmission::factory()->for($verifiedAgent)->create([
         'status' => LicenseSubmission::STATUS_VERIFIED,
     ]);
@@ -55,6 +68,7 @@ test('an agent cannot submit while pending review or verified', function () {
 test('an agent can resubmit after a rejection, clearing the previous note', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($agent)->create();
     $submission = LicenseSubmission::factory()->rejected()->for($agent)->create();
     $oldPath = $submission->license_path;
     Storage::disk('local')->put($oldPath, 'old license contents');

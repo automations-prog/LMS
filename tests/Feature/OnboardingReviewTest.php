@@ -329,6 +329,7 @@ test('the onboarding list and detail page report the contracting stages', functi
     EligibilityAttestation::factory()->for($agent)->create([
         'status' => EligibilityAttestation::STATUS_CLEARED,
         'contracting_forwarded_at' => now(),
+        'contracting_complete_at' => now(),
     ]);
 
     $this->actingAs($admin)
@@ -341,14 +342,23 @@ test('the onboarding list and detail page report the contracting stages', functi
             ->where(
                 'agents.data.0.eligibility_attestation.contracting_confirmed_at',
                 null,
+            )
+            ->where(
+                'agents.data.0.eligibility_attestation.contracting_complete_at',
+                fn ($value) => $value !== null,
             ));
 
     $this->actingAs($admin)
         ->get(route('onboarding.show', $agent))
-        ->assertInertia(fn ($page) => $page->where(
-            'agent.eligibility_attestation.contracting_forwarded_at',
-            fn ($value) => $value !== null,
-        ));
+        ->assertInertia(fn ($page) => $page
+            ->where(
+                'agent.eligibility_attestation.contracting_forwarded_at',
+                fn ($value) => $value !== null,
+            )
+            ->where(
+                'agent.eligibility_attestation.contracting_complete_at',
+                fn ($value) => $value !== null,
+            ));
 });
 
 test('onboarding.show 404s for a user who is not an agent', function () {

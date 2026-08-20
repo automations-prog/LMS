@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $contracting_forwarded_at
  * @property Carbon|null $contracting_issued_at
  * @property Carbon|null $contracting_carrier_certs_at
+ * @property Carbon|null $contracting_complete_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -54,6 +55,7 @@ use Illuminate\Support\Carbon;
     'contracting_forwarded_at',
     'contracting_issued_at',
     'contracting_carrier_certs_at',
+    'contracting_complete_at',
 ])]
 class EligibilityAttestation extends Model
 {
@@ -96,6 +98,7 @@ class EligibilityAttestation extends Model
             'contracting_forwarded_at' => 'datetime',
             'contracting_issued_at' => 'datetime',
             'contracting_carrier_certs_at' => 'datetime',
+            'contracting_complete_at' => 'datetime',
         ];
     }
 
