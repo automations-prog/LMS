@@ -19,13 +19,13 @@ class DashboardController extends Controller
 {
     /**
      * Display the dashboard — the admin/super-admin management overview, or
-     * (lacking courses.view) the agent's resource-focused landing page. Agents
-     * only ever hold courses.browse, so nothing user-management-related is
-     * ever queried or sent for them.
+     * (for anyone without that role) the agent's resource-focused landing
+     * page. Agents hold no admin-level permissions, so nothing
+     * user-management-related is ever queried or sent for them.
      */
     public function index(Request $request): Response|RedirectResponse
     {
-        if ($request->user()->can('courses.view')) {
+        if ($request->user()->hasAnyRole(['admin', 'super-admin'])) {
             return $this->managementDashboard();
         }
 

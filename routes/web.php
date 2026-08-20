@@ -11,10 +11,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/users.php';
-require __DIR__.'/courses.php';
 require __DIR__.'/invite.php';
 require __DIR__.'/eligibility.php';
 require __DIR__.'/training.php';
 require __DIR__.'/license.php';
 require __DIR__.'/ahip-certification.php';
 require __DIR__.'/onboarding.php';
+require __DIR__.'/agents.php';
+require __DIR__.'/roles.php';

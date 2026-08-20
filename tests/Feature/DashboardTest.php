@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Course;
 use App\Models\EligibilityAttestation;
 use App\Models\TrainingCompletion;
 use App\Models\User;
@@ -60,9 +59,6 @@ test('agents see the agent dashboard, with no user-management or resource data',
     $agent = User::factory()->create();
     $agent->assignRole('agent');
     EligibilityAttestation::factory()->for($agent)->create();
-
-    Course::factory()->create(['status' => 'published']);
-    Course::factory()->create(['status' => 'draft']);
 
     $response = $this->actingAs($agent)->get(route('dashboard'));
 

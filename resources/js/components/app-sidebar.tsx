@@ -1,3 +1,11 @@
+import { Link, usePage } from '@inertiajs/react';
+import {
+    BadgeCheck,
+    LayoutGrid,
+    Lock,
+    ShieldCheck,
+    Users,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -11,11 +19,11 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as agentsIndex } from '@/routes/agents';
 import { index as onboardingIndex } from '@/routes/onboarding';
+import { index as rolesIndex } from '@/routes/roles';
 import { index as usersIndex } from '@/routes/users';
 import type { Auth, NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, ShieldCheck, Users } from 'lucide-react';
 
 export function AppSidebar() {
     const { auth } = usePage<{ auth: Auth }>().props;
@@ -33,6 +41,24 @@ export function AppSidebar() {
                       title: 'Onboarding',
                       href: onboardingIndex(),
                       icon: ShieldCheck,
+                  },
+              ]
+            : []),
+        ...(permissions.includes('agents.view')
+            ? [
+                  {
+                      title: 'Verified agents',
+                      href: agentsIndex(),
+                      icon: BadgeCheck,
+                  },
+              ]
+            : []),
+        ...(permissions.includes('roles.manage')
+            ? [
+                  {
+                      title: 'Roles & Permissions',
+                      href: rolesIndex(),
+                      icon: Lock,
                   },
               ]
             : []),

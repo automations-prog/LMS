@@ -20,9 +20,18 @@ class RolesAndPermissionsSeeder extends Seeder
         // reference permissions that no longer exist in the (recreated) table.
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // Superseded by the single onboarding.review permission below —
-        // delete the orphaned rows rather than leave them unassigned.
-        Permission::whereIn('name', ['eligibility.review', 'training.review'])->delete();
+        // Superseded by the single onboarding.review permission below, or
+        // dropped along with the courses feature — delete the orphaned rows
+        // rather than leave them unassigned.
+        Permission::whereIn('name', [
+            'eligibility.review',
+            'training.review',
+            'courses.view',
+            'courses.create',
+            'courses.update',
+            'courses.delete',
+            'courses.browse',
+        ])->delete();
 
         $permissions = [
             'users.view',
@@ -31,12 +40,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.delete',
             'users.manage-admins',
             'users.impersonate',
-            'courses.view',
-            'courses.create',
-            'courses.update',
-            'courses.delete',
-            'courses.browse',
             'onboarding.review',
+            'agents.view',
+            'roles.manage',
         ];
 
         foreach ($permissions as $permission) {
@@ -61,17 +67,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.update',
             'users.delete',
             'users.impersonate',
-            'courses.view',
-            'courses.create',
-            'courses.update',
-            'courses.delete',
             'onboarding.review',
+            'agents.view',
         ]);
 
         $agent = Role::findOrCreate('agent');
-        $agent->syncPermissions([
-            'courses.browse',
-        ]);
+        $agent->syncPermissions([]);
 
         $user = User::firstOrCreate(
             ['email' => 'superadmin@example.com'],
