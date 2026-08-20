@@ -1,5 +1,3 @@
-import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, ShieldCheck, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -16,6 +14,8 @@ import { dashboard } from '@/routes';
 import { index as onboardingIndex } from '@/routes/onboarding';
 import { index as usersIndex } from '@/routes/users';
 import type { Auth, NavItem } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { LayoutGrid, ShieldCheck, Users } from 'lucide-react';
 
 export function AppSidebar() {
     const { auth } = usePage<{ auth: Auth }>().props;
@@ -27,21 +27,21 @@ export function AppSidebar() {
             href: dashboard(),
             icon: LayoutGrid,
         },
-        ...(permissions.includes('users.view')
-            ? [
-                  {
-                      title: 'Users',
-                      href: usersIndex(),
-                      icon: Users,
-                  },
-              ]
-            : []),
         ...(permissions.includes('onboarding.review')
             ? [
                   {
                       title: 'Onboarding',
                       href: onboardingIndex(),
                       icon: ShieldCheck,
+                  },
+              ]
+            : []),
+        ...(permissions.includes('users.view')
+            ? [
+                  {
+                      title: 'Users',
+                      href: usersIndex(),
+                      icon: Users,
                   },
               ]
             : []),
