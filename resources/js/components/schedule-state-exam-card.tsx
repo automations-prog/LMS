@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { StepBadge } from '@/components/ui/step-badge';
 
 const PROCTORING_OPTIONS = [
     { value: 'in_person', label: 'In-person', icon: Building2 },
@@ -34,9 +36,7 @@ function InfoBlock({
         <div className="rounded-md border px-3 py-2.5">
             <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
                 <Icon className="size-4" />
-                <span className="text-xs tracking-wide uppercase">
-                    {label}
-                </span>
+                <span className="text-xs tracking-wide uppercase">{label}</span>
             </div>
             <p className="text-sm font-medium">{value}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>
@@ -47,20 +47,30 @@ function InfoBlock({
 type Props = {
     onMarkAsDone: (proctoringType: string) => void;
     markingDone: boolean;
+    stepNumber: number;
+    totalSteps: number;
 };
 
 export default function ScheduleStateExamCard({
     onMarkAsDone,
     markingDone,
+    stepNumber,
+    totalSteps,
 }: Props) {
     const [selected, setSelected] = useState<string | null>(null);
 
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <h3 className="text-base font-medium">
-                    Schedule your state exam
-                </h3>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-base font-medium">
+                            Schedule your state exam
+                        </h3>
+                        <StatusBadge status="in_progress" />
+                    </div>
+                    <StepBadge current={stepNumber} total={totalSteps} />
+                </div>
                 <p className="text-sm text-muted-foreground">
                     Once you're confidently passing XCEL's exam simulators,
                     schedule your real state exam through Pearson VUE or PSI
@@ -120,15 +130,15 @@ export default function ScheduleStateExamCard({
                     <div className="flex items-start gap-2">
                         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
                         <p className="text-sm text-amber-900 dark:text-amber-200">
-                            Some states require a NIPR authorization step
-                            before you can book — don't skip ahead.
+                            Some states require a NIPR authorization step before
+                            you can book — don't skip ahead.
                         </p>
                     </div>
                     <div className="flex items-start gap-2">
                         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
                         <p className="text-sm text-amber-900 dark:text-amber-200">
-                            Some states cap retakes within a 12-month window
-                            — don't schedule until you're ready.
+                            Some states cap retakes within a 12-month window —
+                            don't schedule until you're ready.
                         </p>
                     </div>
                 </div>

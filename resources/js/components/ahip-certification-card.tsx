@@ -17,6 +17,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { StepBadge } from '@/components/ui/step-badge';
 import { useClipboard } from '@/hooks/use-clipboard';
 
 const ENROLL_URL = 'ahipmedicaretraining.com/clients/oim';
@@ -36,15 +38,11 @@ function InfoBlock({
         <div className="rounded-md border px-3 py-2.5">
             <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
                 <Icon className="size-4" />
-                <span className="text-xs tracking-wide uppercase">
-                    {label}
-                </span>
+                <span className="text-xs tracking-wide uppercase">{label}</span>
             </div>
             <p className="text-sm font-medium">{value}</p>
             {note && (
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                    {note}
-                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>
             )}
         </div>
     );
@@ -53,33 +51,41 @@ function InfoBlock({
 type Props = {
     ahipStatus: 'pending_review' | 'rejected' | null;
     ahipNote: string | null;
+    stepNumber: number;
+    totalSteps: number;
 };
 
 export default function AhipCertificationCard({
     ahipStatus,
     ahipNote,
+    stepNumber,
+    totalSteps,
 }: Props) {
     const [copiedText, copy] = useClipboard();
 
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <h3 className="text-base font-medium">
-                    AHIP/FWA certification
-                </h3>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-base font-medium">
+                            AHIP/FWA certification
+                        </h3>
+                        <StatusBadge status={ahipStatus ?? 'in_progress'} />
+                    </div>
+                    <StepBadge current={stepNumber} total={totalSteps} />
+                </div>
                 <p className="text-sm text-muted-foreground">
                     Immediately after your license is active, complete AHIP
-                    certification (Medicare + Fraud, Waste, and Abuse
-                    training) — required before you can sell Medicare
-                    Advantage or Part D plans.
+                    certification (Medicare + Fraud, Waste, and Abuse training)
+                    — required before you can sell Medicare Advantage or Part D
+                    plans.
                 </p>
             </CardHeader>
 
             <CardContent className="space-y-4">
                 <div className="flex w-fit items-center gap-2 rounded-md bg-muted px-3 py-1.5">
-                    <code className="text-xs text-primary">
-                        {ENROLL_URL}
-                    </code>
+                    <code className="text-xs text-primary">{ENROLL_URL}</code>
                     <button
                         type="button"
                         onClick={() => copy(ENROLL_URL)}
@@ -151,8 +157,7 @@ export default function AhipCertificationCard({
                             {({ processing, progress, errors }) => (
                                 <div className="space-y-2">
                                     <Label htmlFor="certificate_file">
-                                        Upload your AHIP completion
-                                        certificate
+                                        Upload your AHIP completion certificate
                                     </Label>
                                     <FileInput
                                         id="certificate_file"

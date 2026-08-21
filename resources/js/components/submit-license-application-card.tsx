@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { StepBadge } from '@/components/ui/step-badge';
 
 function InfoBlock({
     icon: Icon,
@@ -28,9 +30,7 @@ function InfoBlock({
         <div className="rounded-md border px-3 py-2.5">
             <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
                 <Icon className="size-4" />
-                <span className="text-xs tracking-wide uppercase">
-                    {label}
-                </span>
+                <span className="text-xs tracking-wide uppercase">{label}</span>
             </div>
             <p className="text-sm font-medium">{value}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>
@@ -41,18 +41,28 @@ function InfoBlock({
 type Props = {
     onMarkAsDone: () => void;
     markingDone: boolean;
+    stepNumber: number;
+    totalSteps: number;
 };
 
 export default function SubmitLicenseApplicationCard({
     onMarkAsDone,
     markingDone,
+    stepNumber,
+    totalSteps,
 }: Props) {
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <h3 className="text-base font-medium">
-                    Submit your license application
-                </h3>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-base font-medium">
+                            Submit your license application
+                        </h3>
+                        <StatusBadge status="in_progress" />
+                    </div>
+                    <StepBadge current={stepNumber} total={totalSteps} />
+                </div>
                 <p className="text-sm text-muted-foreground">
                     Submit your license application through NIPR (National
                     Insurance Producer Registry) — the same portal used
@@ -93,8 +103,8 @@ export default function SubmitLicenseApplicationCard({
                         <Paperclip className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground">
                             Answered "yes" to any background question? You'll
-                            need to upload supporting docs via NIPR's
-                            Attachment Warehouse.
+                            need to upload supporting docs via NIPR's Attachment
+                            Warehouse.
                         </p>
                     </div>
                 </div>
@@ -103,11 +113,11 @@ export default function SubmitLicenseApplicationCard({
                     <div className="flex items-start gap-2">
                         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
                         <p className="text-sm text-amber-900 dark:text-amber-200">
-                            Don't submit a second application before your
-                            first one is fully issued if fingerprinting is
-                            involved — doing so can trigger a duplicate
-                            fingerprint fee. Check with your PU coach if
-                            you're unsure of the order for your state.
+                            Don't submit a second application before your first
+                            one is fully issued if fingerprinting is involved —
+                            doing so can trigger a duplicate fingerprint fee.
+                            Check with your PU coach if you're unsure of the
+                            order for your state.
                         </p>
                     </div>
                 </div>

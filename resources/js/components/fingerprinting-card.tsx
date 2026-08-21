@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { StepBadge } from '@/components/ui/step-badge';
 
 function InfoBlock({
     icon: Icon,
@@ -28,9 +30,7 @@ function InfoBlock({
         <div className="rounded-md border px-3 py-2.5">
             <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
                 <Icon className="size-4" />
-                <span className="text-xs tracking-wide uppercase">
-                    {label}
-                </span>
+                <span className="text-xs tracking-wide uppercase">{label}</span>
             </div>
             <p className="text-sm font-medium">{value}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>
@@ -41,18 +41,28 @@ function InfoBlock({
 type Props = {
     onMarkAsDone: () => void;
     markingDone: boolean;
+    stepNumber: number;
+    totalSteps: number;
 };
 
 export default function FingerprintingCard({
     onMarkAsDone,
     markingDone,
+    stepNumber,
+    totalSteps,
 }: Props) {
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <h3 className="text-base font-medium">
-                    Fingerprinting / background check
-                </h3>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-base font-medium">
+                            Fingerprinting / background check
+                        </h3>
+                        <StatusBadge status="in_progress" />
+                    </div>
+                    <StepBadge current={stepNumber} total={totalSteps} />
+                </div>
                 <p className="text-sm text-muted-foreground">
                     Required in most (not all) states.
                 </p>
@@ -91,17 +101,16 @@ export default function FingerprintingCard({
                         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                                Order matters — don't fingerprint before
-                                you've applied
+                                Order matters — don't fingerprint before you've
+                                applied
                             </p>
                             <p className="text-sm text-amber-900 dark:text-amber-200">
                                 The correct sequence is exam → application →
-                                fingerprinting. Some states have a strict
-                                window (as short as 10 days) between
-                                fingerprinting and application submission —
-                                miss it and you pay again. Check with your PU
-                                coach on your state's specific sequence
-                                before scheduling.
+                                fingerprinting. Some states have a strict window
+                                (as short as 10 days) between fingerprinting and
+                                application submission — miss it and you pay
+                                again. Check with your PU coach on your state's
+                                specific sequence before scheduling.
                             </p>
                         </div>
                     </div>
@@ -112,10 +121,10 @@ export default function FingerprintingCard({
                         <HelpCircle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground">
                             Have something in your background you're unsure
-                            about? Talk to your PU coach before this step —
-                            a record doesn't automatically disqualify you,
-                            and some states offer a pre-check before you
-                            invest further.
+                            about? Talk to your PU coach before this step — a
+                            record doesn't automatically disqualify you, and
+                            some states offer a pre-check before you invest
+                            further.
                         </p>
                     </div>
                 </div>

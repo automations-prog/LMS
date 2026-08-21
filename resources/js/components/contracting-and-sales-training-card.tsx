@@ -1,6 +1,5 @@
 import {
     ArrowRight,
-    Check,
     ClipboardCheck,
     Clock,
     FileText,
@@ -8,9 +7,11 @@ import {
     PhoneCall,
     ShieldCheck,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { StepBadge } from '@/components/ui/step-badge';
+import { Stepper } from '@/components/ui/stepper';
 
 const CONTRACTING_STAGES = [
     { key: 'confirmed', title: 'License & certification confirmed' },
@@ -36,38 +37,34 @@ type Props = {
         carrier_certs: boolean;
         complete: boolean;
     };
+    stepNumber: number;
+    totalSteps: number;
 };
 
 export default function ContractingAndSalesTrainingCard({
     contracting,
+    stepNumber,
+    totalSteps,
 }: Props) {
-    // Stages can be checked independently and out of order — "current" is
-    // just the first one not yet done, for the "(you are here)" pointer;
-    // if everything's done, point at the last stage instead.
-    const firstIncomplete = CONTRACTING_STAGES.findIndex(
-        (stage) => !contracting[stage.key as keyof typeof contracting],
-    );
-    const currentIndex =
-        firstIncomplete === -1
-            ? CONTRACTING_STAGES.length - 1
-            : firstIncomplete;
     const isAppointed = contracting.issued || contracting.carrier_certs;
 
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <div className="flex items-center gap-2">
-                    <h3 className="text-base font-medium">
-                        Carrier contracting & sales training
-                    </h3>
-                    {contracting.complete ? (
-                        <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
-                            <Check className="size-3" />
-                            Verified
-                        </Badge>
-                    ) : (
-                        <Badge variant="secondary">In progress</Badge>
-                    )}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-base font-medium">
+                            Carrier contracting & sales training
+                        </h3>
+                        <StatusBadge
+                            status={
+                                contracting.complete
+                                    ? 'verified'
+                                    : 'in_progress'
+                            }
+                        />
+                    </div>
+                    <StepBadge current={stepNumber} total={totalSteps} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                     Licensed ≠ ready to sell. Once you're licensed and
@@ -81,54 +78,13 @@ export default function ContractingAndSalesTrainingCard({
                     <p className="mb-3 text-sm font-medium">
                         Contracting & appointments
                     </p>
-                    <div className="flex items-center gap-1">
-                        {CONTRACTING_STAGES.map((stage, index) => {
-                            const isDone =
-                                contracting[
-                                    stage.key as keyof typeof contracting
-                                ];
-                            const isCurrent = index === currentIndex;
-
-                            return (
-                                <div
-                                    key={stage.key}
-                                    className="flex flex-1 items-center"
-                                >
-                                    <div
-                                        className={
-                                            isDone
-                                                ? 'flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground'
-                                                : isCurrent
-                                                  ? 'flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-primary text-xs font-medium text-primary'
-                                                  : 'flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium text-muted-foreground'
-                                        }
-                                        title={stage.title}
-                                    >
-                                        {isDone ? (
-                                            <Check className="size-3.5" />
-                                        ) : (
-                                            index + 1
-                                        )}
-                                    </div>
-                                    {index < CONTRACTING_STAGES.length - 1 && (
-                                        <div
-                                            className={
-                                                isDone
-                                                    ? 'h-px flex-1 bg-primary'
-                                                    : 'h-px flex-1 bg-border'
-                                            }
-                                        />
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                    <p className="mt-2 text-sm text-primary">
-                        {CONTRACTING_STAGES[currentIndex]?.title}
-                        <span className="ml-2 text-xs font-normal text-muted-foreground">
-                            (you are here)
-                        </span>
-                    </p>
+                    <Stepper
+                        steps={CONTRACTING_STAGES}
+                        isDone={(stage) =>
+                            contracting[stage.key as keyof typeof contracting]
+                        }
+                        showCurrentLabel
+                    />
                 </div>
 
                 <div className="rounded-md border bg-muted/40 px-3 py-2.5">

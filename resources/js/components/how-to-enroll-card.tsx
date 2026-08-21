@@ -1,11 +1,12 @@
 import { ArrowRight, Check, Copy, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { StepBadge } from '@/components/ui/step-badge';
 import { useClipboard } from '@/hooks/use-clipboard';
 
 const PARTNER_URL = 'partners.xcelsolutions.com/pitchuniversity';
@@ -41,23 +42,28 @@ function Step({
 type Props = {
     onMarkAsDone: (lineOfAuthority: string) => void;
     markingDone: boolean;
+    stepNumber: number;
+    totalSteps: number;
 };
 
-export default function HowToEnrollCard({ onMarkAsDone, markingDone }: Props) {
+export default function HowToEnrollCard({
+    onMarkAsDone,
+    markingDone,
+    stepNumber,
+    totalSteps,
+}: Props) {
     const [copiedText, copy] = useClipboard();
     const [selected, setSelected] = useState<string | null>(null);
 
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <div className="flex items-center gap-2">
-                    <h3 className="text-base font-medium">How to enroll</h3>
-                    <Badge
-                        variant="outline"
-                        className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
-                    >
-                        You're eligible
-                    </Badge>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-base font-medium">How to enroll</h3>
+                        <StatusBadge status="eligible" />
+                    </div>
+                    <StepBadge current={stepNumber} total={totalSteps} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                     Complete these steps to enroll in XCEL.
