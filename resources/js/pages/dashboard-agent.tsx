@@ -11,27 +11,72 @@ import HowToEnrollCard from '@/components/how-to-enroll-card';
 import ScheduleStateExamCard from '@/components/schedule-state-exam-card';
 import SubmitLicenseApplicationCard from '@/components/submit-license-application-card';
 import SubmitLicenseCopyCard from '@/components/submit-license-copy-card';
-import { Stepper } from '@/components/ui/stepper';
-import type { StepperStep } from '@/components/ui/stepper';
+import { JourneyProgress } from '@/components/ui/journey-progress';
+import { JourneyTrailRow } from '@/components/ui/journey-trail-row';
+import { ONBOARDING_ICONS } from '@/lib/onboarding-icons';
 import { dashboard } from '@/routes';
 import type { Auth } from '@/types';
 
-const JOURNEY_STEPS: StepperStep[] = [
-    { key: 'eligibility', title: 'Eligibility', label: 'Eligibility' },
-    { key: 'enrollment', title: 'Enrollment', label: 'Enrollment' },
-    { key: 'training', title: 'XCEL training', label: 'Training' },
-    { key: 'exam', title: 'State exam', label: 'Exam' },
-    { key: 'fingerprinting', title: 'Fingerprinting', label: 'Fingerprint' },
-    { key: 'license', title: 'License', label: 'License' },
-    { key: 'ahip', title: 'AHIP certification', label: 'AHIP' },
-    { key: 'contracting', title: 'Contracting', label: 'Contracting' },
+type JourneyStage = {
+    key: string;
+    title: string;
+    icon: (typeof ONBOARDING_ICONS)[keyof typeof ONBOARDING_ICONS];
+    summary: string;
+};
+
+const JOURNEY_STEPS: JourneyStage[] = [
+    {
+        key: 'eligibility',
+        title: 'Eligibility',
+        icon: ONBOARDING_ICONS.eligibility,
+        summary:
+            "We confirmed you meet your state's requirements before anything else.",
+    },
+    {
+        key: 'enrollment',
+        title: 'Enrollment',
+        icon: ONBOARDING_ICONS.enrollment,
+        summary: 'Enrollment paperwork and XCEL account access were set up.',
+    },
+    {
+        key: 'training',
+        title: 'XCEL training',
+        icon: ONBOARDING_ICONS.training,
+        summary:
+            "XCEL's state-approved pre-licensing course, done at your own pace.",
+    },
+    {
+        key: 'exam',
+        title: 'State exam',
+        icon: ONBOARDING_ICONS.exam,
+        summary: 'Your state licensing exam was scheduled.',
+    },
+    {
+        key: 'fingerprinting',
+        title: 'Fingerprinting',
+        icon: ONBOARDING_ICONS.fingerprinting,
+        summary: 'Your background check appointment was completed.',
+    },
+    {
+        key: 'license',
+        title: 'License',
+        icon: ONBOARDING_ICONS.license,
+        summary:
+            'Your license application was submitted and the issued copy uploaded.',
+    },
+    {
+        key: 'ahip',
+        title: 'AHIP certification',
+        icon: ONBOARDING_ICONS.ahip,
+        summary: 'Your annual AHIP certification for Medicare products.',
+    },
+    {
+        key: 'contracting',
+        title: 'Contracting',
+        icon: ONBOARDING_ICONS.contracting,
+        summary: 'Carrier contracting so you can start selling.',
+    },
 ];
-
-const TOTAL_STEPS = JOURNEY_STEPS.length;
-
-function journeyStepNumber(key: string) {
-    return JOURNEY_STEPS.findIndex((step) => step.key === key) + 1;
-}
 
 type Props = {
     eligibilityStatus: 'under_review' | 'cleared' | 'not_eligible';
@@ -70,6 +115,7 @@ export default function DashboardAgent({
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const [markingDone, setMarkingDone] = useState(false);
+    const [openStageKey, setOpenStageKey] = useState<string | null>(null);
 
     function markEnrollmentDone(lineOfAuthority: string) {
         setMarkingDone(true);
@@ -110,7 +156,7 @@ export default function DashboardAgent({
         );
     }
 
-    function isJourneyStepDone(step: StepperStep) {
+    function isJourneyStepDone(step: { key: string }) {
         switch (step.key) {
             case 'eligibility':
                 return eligibilityStatus === 'cleared';
@@ -180,14 +226,21 @@ export default function DashboardAgent({
                     </p>
                 </div>
 
-                <div className="mx-auto mt-16 flex w-full max-w-2xl flex-col items-center gap-6">
+                <div className="mt-16 flex w-full flex-col items-center gap-6">
                     <div className="w-full rounded-xl border bg-card px-4 py-4">
                         <p className="mb-3 text-sm font-medium">
                             Your onboarding journey
                         </p>
-                        <Stepper
-                            steps={JOURNEY_STEPS}
-                            isDone={isJourneyStepDone}
+                        <JourneyProgress
+                            total={JOURNEY_STEPS.length}
+                            completed={
+                                JOURNEY_STEPS.filter(isJourneyStepDone).length
+                            }
+                            currentTitle={
+                                JOURNEY_STEPS.find(
+                                    (step) => !isJourneyStepDone(step),
+                                )?.title
+                            }
                         />
                     </div>
 
@@ -197,8 +250,6 @@ export default function DashboardAgent({
                                 <HowToEnrollCard
                                     onMarkAsDone={markEnrollmentDone}
                                     markingDone={markingDone}
-                                    stepNumber={journeyStepNumber('enrollment')}
-                                    totalSteps={TOTAL_STEPS}
                                 />
                             </div>
                         )}
@@ -210,8 +261,6 @@ export default function DashboardAgent({
                                 <CompleteXcelTrainingCard
                                     trainingStatus={trainingStatus}
                                     trainingNote={trainingNote}
-                                    stepNumber={journeyStepNumber('training')}
-                                    totalSteps={TOTAL_STEPS}
                                 />
                             </div>
                         )}
@@ -221,8 +270,6 @@ export default function DashboardAgent({
                             <ScheduleStateExamCard
                                 onMarkAsDone={markExamScheduled}
                                 markingDone={markingDone}
-                                stepNumber={journeyStepNumber('exam')}
-                                totalSteps={TOTAL_STEPS}
                             />
                         </div>
                     )}
@@ -232,8 +279,6 @@ export default function DashboardAgent({
                             <FingerprintingCard
                                 onMarkAsDone={markFingerprintingDone}
                                 markingDone={markingDone}
-                                stepNumber={journeyStepNumber('fingerprinting')}
-                                totalSteps={TOTAL_STEPS}
                             />
                         </div>
                     )}
@@ -246,8 +291,6 @@ export default function DashboardAgent({
                                         markLicenseApplicationSubmitted
                                     }
                                     markingDone={markingDone}
-                                    stepNumber={journeyStepNumber('license')}
-                                    totalSteps={TOTAL_STEPS}
                                 />
                             </div>
                         )}
@@ -258,8 +301,6 @@ export default function DashboardAgent({
                                 <SubmitLicenseCopyCard
                                     licenseStatus={licenseStatus}
                                     licenseNote={licenseNote}
-                                    stepNumber={journeyStepNumber('license')}
-                                    totalSteps={TOTAL_STEPS}
                                 />
                             </div>
                         )}
@@ -270,8 +311,6 @@ export default function DashboardAgent({
                                 <AhipCertificationCard
                                     ahipStatus={ahipStatus}
                                     ahipNote={ahipNote}
-                                    stepNumber={journeyStepNumber('ahip')}
-                                    totalSteps={TOTAL_STEPS}
                                 />
                             </div>
                         )}
@@ -280,11 +319,41 @@ export default function DashboardAgent({
                         <div className="w-full">
                             <ContractingAndSalesTrainingCard
                                 contracting={contracting}
-                                stepNumber={journeyStepNumber('contracting')}
-                                totalSteps={TOTAL_STEPS}
                             />
                         </div>
                     )}
+
+                    <div className="w-full space-y-2">
+                        <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                            Whole path
+                        </p>
+                        {JOURNEY_STEPS.map((step, index) => {
+                            const done = isJourneyStepDone(step);
+                            const isCurrent =
+                                !done &&
+                                JOURNEY_STEPS.slice(0, index).every(
+                                    isJourneyStepDone,
+                                );
+
+                            if (isCurrent) {
+                                return null;
+                            }
+
+                            return (
+                                <JourneyTrailRow
+                                    key={step.key}
+                                    stage={step}
+                                    done={done}
+                                    open={openStageKey === step.key}
+                                    onToggle={(key) =>
+                                        setOpenStageKey((current) =>
+                                            current === key ? null : key,
+                                        )
+                                    }
+                                />
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </>

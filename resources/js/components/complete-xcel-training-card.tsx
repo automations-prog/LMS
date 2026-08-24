@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { StageIcon } from '@/components/ui/stage-icon';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { StepBadge } from '@/components/ui/step-badge';
+import { ONBOARDING_ICONS } from '@/lib/onboarding-icons';
 
 function InfoBlock({
     icon: Icon,
@@ -38,27 +39,23 @@ function InfoBlock({
 type Props = {
     trainingStatus: 'pending_review' | 'rejected' | null;
     trainingNote: string | null;
-    stepNumber: number;
-    totalSteps: number;
 };
 
 export default function CompleteXcelTrainingCard({
     trainingStatus,
     trainingNote,
-    stepNumber,
-    totalSteps,
 }: Props) {
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <StageIcon icon={ONBOARDING_ICONS.training} />
+                    <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-medium">
                             Complete XCEL training
                         </h3>
                         <StatusBadge status={trainingStatus ?? 'in_progress'} />
                     </div>
-                    <StepBadge current={stepNumber} total={totalSteps} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                     Work through XCEL's 3-part training system at your own pace,
@@ -93,7 +90,16 @@ export default function CompleteXcelTrainingCard({
                 <p className="text-sm text-muted-foreground">
                     Stuck on course content? Use XCEL's own support/live help —
                     that's what they're there for. Stuck on access, deadlines,
-                    or "am I actually ready?" — ask here in the channel.
+                    or "am I actually ready?" —{' '}
+                    <a
+                        href="https://app.slack.com/client/T030JQ0AB5L/C0BRASMCYT0"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline"
+                    >
+                        ask here
+                    </a>{' '}
+                    in the channel.
                 </p>
 
                 <Separator />

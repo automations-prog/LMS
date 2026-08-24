@@ -12,8 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { StageIcon } from '@/components/ui/stage-icon';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { StepBadge } from '@/components/ui/step-badge';
+import { ONBOARDING_ICONS } from '@/lib/onboarding-icons';
 
 function InfoBlock({
     icon: Icon,
@@ -41,27 +42,23 @@ function InfoBlock({
 type Props = {
     onMarkAsDone: () => void;
     markingDone: boolean;
-    stepNumber: number;
-    totalSteps: number;
 };
 
 export default function FingerprintingCard({
     onMarkAsDone,
     markingDone,
-    stepNumber,
-    totalSteps,
 }: Props) {
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <StageIcon icon={ONBOARDING_ICONS.fingerprinting} />
+                    <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-medium">
                             Fingerprinting / background check
                         </h3>
                         <StatusBadge status="in_progress" />
                     </div>
-                    <StepBadge current={stepNumber} total={totalSteps} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                     Required in most (not all) states.
@@ -137,7 +134,7 @@ export default function FingerprintingCard({
                             Don't have your state's service code?
                         </p>
                         <a
-                            href="https://app.slack.com/client/T030JQ0AB5L/C0BR17PNURX"
+                            href="https://app.slack.com/client/T030JQ0AB5L/C0BRASMCYT0"
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 text-sm text-primary hover:underline"

@@ -8,10 +8,11 @@ import {
     ShieldCheck,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { JourneyProgress } from '@/components/ui/journey-progress';
 import { Separator } from '@/components/ui/separator';
+import { StageIcon } from '@/components/ui/stage-icon';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { StepBadge } from '@/components/ui/step-badge';
-import { Stepper } from '@/components/ui/stepper';
+import { ONBOARDING_ICONS } from '@/lib/onboarding-icons';
 
 const CONTRACTING_STAGES = [
     { key: 'confirmed', title: 'License & certification confirmed' },
@@ -37,22 +38,25 @@ type Props = {
         carrier_certs: boolean;
         complete: boolean;
     };
-    stepNumber: number;
-    totalSteps: number;
 };
 
 export default function ContractingAndSalesTrainingCard({
     contracting,
-    stepNumber,
-    totalSteps,
 }: Props) {
     const isAppointed = contracting.issued || contracting.carrier_certs;
+    const completedStages = CONTRACTING_STAGES.filter(
+        (stage) => contracting[stage.key as keyof typeof contracting],
+    );
+    const nextStage = CONTRACTING_STAGES.find(
+        (stage) => !contracting[stage.key as keyof typeof contracting],
+    );
 
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <StageIcon icon={ONBOARDING_ICONS.contracting} />
+                    <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-medium">
                             Carrier contracting & sales training
                         </h3>
@@ -64,7 +68,6 @@ export default function ContractingAndSalesTrainingCard({
                             }
                         />
                     </div>
-                    <StepBadge current={stepNumber} total={totalSteps} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                     Licensed ≠ ready to sell. Once you're licensed and
@@ -78,12 +81,10 @@ export default function ContractingAndSalesTrainingCard({
                     <p className="mb-3 text-sm font-medium">
                         Contracting & appointments
                     </p>
-                    <Stepper
-                        steps={CONTRACTING_STAGES}
-                        isDone={(stage) =>
-                            contracting[stage.key as keyof typeof contracting]
-                        }
-                        showCurrentLabel
+                    <JourneyProgress
+                        total={CONTRACTING_STAGES.length}
+                        completed={completedStages.length}
+                        currentTitle={nextStage?.title}
                     />
                 </div>
 
@@ -139,7 +140,7 @@ export default function ContractingAndSalesTrainingCard({
                         No action needed from you right now.
                     </p>
                     <a
-                        href="https://app.slack.com/client/T030JQ0AB5L/C0BR17PNURX"
+                        href="https://app.slack.com/client/T030JQ0AB5L/C0BRASMCYT0"
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-sm text-primary hover:underline"

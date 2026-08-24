@@ -6,33 +6,30 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { StageIcon } from '@/components/ui/stage-icon';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { StepBadge } from '@/components/ui/step-badge';
+import { ONBOARDING_ICONS } from '@/lib/onboarding-icons';
 
 type Props = {
     licenseStatus: 'pending_review' | 'rejected' | null;
     licenseNote: string | null;
-    stepNumber: number;
-    totalSteps: number;
 };
 
 export default function SubmitLicenseCopyCard({
     licenseStatus,
     licenseNote,
-    stepNumber,
-    totalSteps,
 }: Props) {
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <StageIcon icon={ONBOARDING_ICONS.license} />
+                    <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-medium">
                             Upload your license
                         </h3>
                         <StatusBadge status={licenseStatus ?? 'in_progress'} />
                     </div>
-                    <StepBadge current={stepNumber} total={totalSteps} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                     Once your state license is issued, upload a copy here so it

@@ -17,9 +17,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { StageIcon } from '@/components/ui/stage-icon';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { StepBadge } from '@/components/ui/step-badge';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { ONBOARDING_ICONS } from '@/lib/onboarding-icons';
 
 const ENROLL_URL = 'ahipmedicaretraining.com/clients/oim';
 
@@ -51,29 +52,22 @@ function InfoBlock({
 type Props = {
     ahipStatus: 'pending_review' | 'rejected' | null;
     ahipNote: string | null;
-    stepNumber: number;
-    totalSteps: number;
 };
 
-export default function AhipCertificationCard({
-    ahipStatus,
-    ahipNote,
-    stepNumber,
-    totalSteps,
-}: Props) {
+export default function AhipCertificationCard({ ahipStatus, ahipNote }: Props) {
     const [copiedText, copy] = useClipboard();
 
     return (
         <Card>
             <CardHeader className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <StageIcon icon={ONBOARDING_ICONS.ahip} />
+                    <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-medium">
                             AHIP/FWA certification
                         </h3>
                         <StatusBadge status={ahipStatus ?? 'in_progress'} />
                     </div>
-                    <StepBadge current={stepNumber} total={totalSteps} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                     Immediately after your license is active, complete AHIP
