@@ -11,7 +11,7 @@ import HowToEnrollCard from '@/components/how-to-enroll-card';
 import ScheduleStateExamCard from '@/components/schedule-state-exam-card';
 import SubmitLicenseApplicationCard from '@/components/submit-license-application-card';
 import SubmitLicenseCopyCard from '@/components/submit-license-copy-card';
-import { JourneyProgress } from '@/components/ui/journey-progress';
+import { JourneyNodePath } from '@/components/ui/journey-node-path';
 import { JourneyTrailRow } from '@/components/ui/journey-trail-row';
 import { ONBOARDING_ICONS } from '@/lib/onboarding-icons';
 import { dashboard } from '@/routes';
@@ -179,6 +179,10 @@ export default function DashboardAgent({
         }
     }
 
+    const currentStep = JOURNEY_STEPS.find(
+        (step) => !isJourneyStepDone(step),
+    );
+
     function markLicenseApplicationSubmitted() {
         setMarkingDone(true);
 
@@ -231,16 +235,10 @@ export default function DashboardAgent({
                         <p className="mb-3 text-sm font-medium">
                             Your onboarding journey
                         </p>
-                        <JourneyProgress
-                            total={JOURNEY_STEPS.length}
-                            completed={
-                                JOURNEY_STEPS.filter(isJourneyStepDone).length
-                            }
-                            currentTitle={
-                                JOURNEY_STEPS.find(
-                                    (step) => !isJourneyStepDone(step),
-                                )?.title
-                            }
+                        <JourneyNodePath
+                            stages={JOURNEY_STEPS}
+                            isDone={isJourneyStepDone}
+                            currentKey={currentStep?.key}
                         />
                     </div>
 
@@ -327,15 +325,10 @@ export default function DashboardAgent({
                         <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
                             Whole path
                         </p>
-                        {JOURNEY_STEPS.map((step, index) => {
+                        {JOURNEY_STEPS.map((step) => {
                             const done = isJourneyStepDone(step);
-                            const isCurrent =
-                                !done &&
-                                JOURNEY_STEPS.slice(0, index).every(
-                                    isJourneyStepDone,
-                                );
 
-                            if (isCurrent) {
+                            if (step.key === currentStep?.key) {
                                 return null;
                             }
 

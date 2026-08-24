@@ -59,6 +59,12 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    --color-journey-ink: var(--journey-ink);
+    --color-journey-ink-foreground: var(--journey-ink-foreground);
+    --color-journey-accent: var(--journey-accent);
+    --color-journey-tint: var(--journey-tint);
+    --color-journey-border: var(--journey-border);
 }
 
 :root {
@@ -95,6 +101,14 @@
     --sidebar-accent-foreground: #5a4177;
     --sidebar-border: #ece7f5;
     --sidebar-ring: oklch(0.87 0 0);
+
+    /* Same violet brand touch as the sidebar (see the reskin below),
+       reused for the onboarding journey node path. */
+    --journey-ink: #5a4177;
+    --journey-ink-foreground: #ffffff;
+    --journey-accent: #f598ff;
+    --journey-tint: #f3e9fb;
+    --journey-border: #ece7f5;
 }
 
 .dark {
@@ -130,6 +144,14 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(0.269 0 0);
     --sidebar-ring: oklch(0.439 0 0);
+
+    /* Lighter, legible-on-dark violet tones — same accent hue as the light
+       theme, tuned for contrast against a dark background. */
+    --journey-ink: #c9a3ea;
+    --journey-ink-foreground: #241a30;
+    --journey-accent: #f598ff;
+    --journey-tint: rgba(245, 152, 255, 0.14);
+    --journey-border: rgba(245, 152, 255, 0.25);
 }
 
 @layer base {
