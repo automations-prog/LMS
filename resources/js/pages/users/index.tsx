@@ -4,6 +4,7 @@ import {
     Check,
     CircleCheck,
     Copy,
+    Download,
     MoreHorizontal,
     Pencil,
     Plus,
@@ -268,6 +269,7 @@ export default function UsersIndex({
                                 variant="secondary"
                                 onClick={() => setPullAgentsOpen(true)}
                             >
+                                <Download className="size-4" />
                                 Pull New Agents
                             </Button>
 

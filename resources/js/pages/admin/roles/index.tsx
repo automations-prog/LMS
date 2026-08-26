@@ -33,6 +33,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { brandButtonClass } from '@/lib/brand-theme';
 import { index } from '@/routes/roles';
 import type { Paginator } from '@/types';
 
@@ -120,9 +121,7 @@ function PermissionMatrix({
                                 <Checkbox
                                     checked={selected.includes(permission)}
                                     disabled={disabled}
-                                    onCheckedChange={() =>
-                                        onToggle(permission)
-                                    }
+                                    onCheckedChange={() => onToggle(permission)}
                                 />
                                 {permission}
                             </label>
@@ -160,7 +159,7 @@ function CreateRoleSheet({ permissions }: { permissions: string[] }) {
             }}
         >
             <SheetTrigger asChild>
-                <Button>
+                <Button className={brandButtonClass}>
                     <Plus className="size-4" />
                     New role
                 </Button>
@@ -207,9 +206,7 @@ function CreateRoleSheet({ permissions }: { permissions: string[] }) {
 
                             <SheetFooter className="flex-row justify-end gap-2 border-t">
                                 <SheetClose asChild>
-                                    <Button variant="secondary">
-                                        Cancel
-                                    </Button>
+                                    <Button variant="secondary">Cancel</Button>
                                 </SheetClose>
                                 <Button type="submit" disabled={processing}>
                                     {processing && <Spinner />}
@@ -329,9 +326,7 @@ function EditRoleSheet({
 
                             <SheetFooter className="flex-row justify-end gap-2 border-t">
                                 <SheetClose asChild>
-                                    <Button variant="secondary">
-                                        Cancel
-                                    </Button>
+                                    <Button variant="secondary">Cancel</Button>
                                 </SheetClose>
                                 <Button type="submit" disabled={processing}>
                                     {processing && <Spinner />}
@@ -372,9 +367,7 @@ function DeleteRoleDialog({
                         {({ processing }) => (
                             <DialogFooter className="gap-2">
                                 <DialogClose asChild>
-                                    <Button variant="secondary">
-                                        Cancel
-                                    </Button>
+                                    <Button variant="secondary">Cancel</Button>
                                 </DialogClose>
                                 <Button
                                     type="submit"
@@ -457,9 +450,7 @@ export default function RolesIndex({
                         <thead>
                             <tr className="border-b border-sidebar-border/70 text-left text-muted-foreground dark:border-sidebar-border">
                                 <th className="px-4 py-3 font-medium">Role</th>
-                                <th className="px-4 py-3 font-medium">
-                                    Users
-                                </th>
+                                <th className="px-4 py-3 font-medium">Users</th>
                                 <th className="px-4 py-3 font-medium">
                                     Permissions
                                 </th>
