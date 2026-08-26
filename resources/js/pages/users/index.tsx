@@ -182,16 +182,13 @@ export default function UsersIndex({
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const canCreate = assignableRoles.length > 0;
-    const canImpersonate = auth.user.permissions.includes(
-        'users.impersonate',
-    );
+    const canImpersonate = auth.user.permissions.includes('users.impersonate');
 
     const [createOpen, setCreateOpen] = useState(false);
     const [createRole, setCreateRole] = useState(assignableRoles[0]);
+    const [pullAgentsOpen, setPullAgentsOpen] = useState(false);
     const [editingUserId, setEditingUserId] = useState<number | null>(null);
-    const [deletingUserId, setDeletingUserId] = useState<number | null>(
-        null,
-    );
+    const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
     const [suspendingUserId, setSuspendingUserId] = useState<number | null>(
         null,
     );
@@ -203,9 +200,7 @@ export default function UsersIndex({
     const [copiedEmail, copyEmail] = useClipboard();
 
     function isRowSelectable(user: UserRow) {
-        const canEditRow = assignableRoles.includes(
-            user.roles[0]?.name ?? '',
-        );
+        const canEditRow = assignableRoles.includes(user.roles[0]?.name ?? '');
 
         return canEditRow && user.id !== auth.user.id;
     }
@@ -268,140 +263,153 @@ export default function UsersIndex({
                     />
 
                     {canCreate && (
-                        <Sheet
-                            open={createOpen}
-                            onOpenChange={(open) => {
-                                setCreateOpen(open);
-
-                                if (open) {
-                                    setCreateRole(assignableRoles[0]);
-                                }
-                            }}
-                        >
-                            <SheetTrigger asChild>
-                                <Button className={brandButtonClass}>
-                                    <Plus className="size-4" />
-                                    New user
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent
-                                side="right"
-                                className="flex flex-col gap-0 sm:max-w-md"
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="secondary"
+                                onClick={() => setPullAgentsOpen(true)}
                             >
-                                <SheetHeader>
-                                    <SheetTitle>
-                                        {ROLES_REQUIRING_PASSWORD.includes(
-                                            createRole,
-                                        )
-                                            ? 'Add user'
-                                            : 'Invite user'}
-                                    </SheetTitle>
-                                </SheetHeader>
+                                Pull New Agents
+                            </Button>
 
-                                <Form
-                                    {...UserController.store.form()}
-                                    resetOnSuccess
-                                    onSuccess={() => setCreateOpen(false)}
-                                    className="flex flex-1 flex-col overflow-hidden"
+                            <Sheet
+                                open={createOpen}
+                                onOpenChange={(open) => {
+                                    setCreateOpen(open);
+
+                                    if (open) {
+                                        setCreateRole(assignableRoles[0]);
+                                    }
+                                }}
+                            >
+                                <SheetTrigger asChild>
+                                    <Button className={brandButtonClass}>
+                                        <Plus className="size-4" />
+                                        New user
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent
+                                    side="right"
+                                    className="flex flex-col gap-0 sm:max-w-md"
                                 >
-                                    {({ processing, errors }) => (
-                                        <>
-                                            <div className="flex-1 space-y-4 overflow-y-auto px-4">
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="name">
-                                                        Name
-                                                    </Label>
-                                                    <Input
-                                                        id="name"
-                                                        name="name"
-                                                        required
-                                                        autoFocus
-                                                        autoComplete="name"
-                                                    />
-                                                    <InputError
-                                                        message={errors.name}
-                                                    />
-                                                </div>
+                                    <SheetHeader>
+                                        <SheetTitle>
+                                            {ROLES_REQUIRING_PASSWORD.includes(
+                                                createRole,
+                                            )
+                                                ? 'Add user'
+                                                : 'Invite user'}
+                                        </SheetTitle>
+                                    </SheetHeader>
 
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="email">
-                                                        Email address
-                                                    </Label>
-                                                    <Input
-                                                        id="email"
-                                                        type="email"
-                                                        name="email"
-                                                        required
-                                                        autoComplete="email"
-                                                    />
-                                                    <InputError
-                                                        message={errors.email}
-                                                    />
-                                                </div>
-
-                                                <RoleSelect
-                                                    assignableRoles={
-                                                        assignableRoles
-                                                    }
-                                                    defaultValue={
-                                                        assignableRoles[0]
-                                                    }
-                                                    onValueChange={
-                                                        setCreateRole
-                                                    }
-                                                    error={errors.role}
-                                                />
-
-                                                {ROLES_REQUIRING_PASSWORD.includes(
-                                                    createRole,
-                                                ) && (
+                                    <Form
+                                        {...UserController.store.form()}
+                                        resetOnSuccess
+                                        onSuccess={() => setCreateOpen(false)}
+                                        className="flex flex-1 flex-col overflow-hidden"
+                                    >
+                                        {({ processing, errors }) => (
+                                            <>
+                                                <div className="flex-1 space-y-4 overflow-y-auto px-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="password">
-                                                            Password
+                                                        <Label htmlFor="name">
+                                                            Name
                                                         </Label>
-                                                        <PasswordInput
-                                                            id="password"
-                                                            name="password"
+                                                        <Input
+                                                            id="name"
+                                                            name="name"
                                                             required
-                                                            autoComplete="new-password"
+                                                            autoFocus
+                                                            autoComplete="name"
                                                         />
                                                         <InputError
                                                             message={
-                                                                errors.password
+                                                                errors.name
                                                             }
                                                         />
                                                     </div>
-                                                )}
-                                            </div>
 
-                                            <SheetFooter className="flex-row justify-end gap-2 border-t">
-                                                <SheetClose asChild>
-                                                    <Button variant="secondary">
-                                                        Cancel
-                                                    </Button>
-                                                </SheetClose>
-                                                <Button
-                                                    type="submit"
-                                                    className={
-                                                        brandButtonClass
-                                                    }
-                                                    disabled={processing}
-                                                >
-                                                    {processing && (
-                                                        <Spinner />
-                                                    )}
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="email">
+                                                            Email address
+                                                        </Label>
+                                                        <Input
+                                                            id="email"
+                                                            type="email"
+                                                            name="email"
+                                                            required
+                                                            autoComplete="email"
+                                                        />
+                                                        <InputError
+                                                            message={
+                                                                errors.email
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    <RoleSelect
+                                                        assignableRoles={
+                                                            assignableRoles
+                                                        }
+                                                        defaultValue={
+                                                            assignableRoles[0]
+                                                        }
+                                                        onValueChange={
+                                                            setCreateRole
+                                                        }
+                                                        error={errors.role}
+                                                    />
+
                                                     {ROLES_REQUIRING_PASSWORD.includes(
                                                         createRole,
-                                                    )
-                                                        ? 'Create user'
-                                                        : 'Send invite'}
-                                                </Button>
-                                            </SheetFooter>
-                                        </>
-                                    )}
-                                </Form>
-                            </SheetContent>
-                        </Sheet>
+                                                    ) && (
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="password">
+                                                                Password
+                                                            </Label>
+                                                            <PasswordInput
+                                                                id="password"
+                                                                name="password"
+                                                                required
+                                                                autoComplete="new-password"
+                                                            />
+                                                            <InputError
+                                                                message={
+                                                                    errors.password
+                                                                }
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <SheetFooter className="flex-row justify-end gap-2 border-t">
+                                                    <SheetClose asChild>
+                                                        <Button variant="secondary">
+                                                            Cancel
+                                                        </Button>
+                                                    </SheetClose>
+                                                    <Button
+                                                        type="submit"
+                                                        className={
+                                                            brandButtonClass
+                                                        }
+                                                        disabled={processing}
+                                                    >
+                                                        {processing && (
+                                                            <Spinner />
+                                                        )}
+                                                        {ROLES_REQUIRING_PASSWORD.includes(
+                                                            createRole,
+                                                        )
+                                                            ? 'Create user'
+                                                            : 'Send invite'}
+                                                    </Button>
+                                                </SheetFooter>
+                                            </>
+                                        )}
+                                    </Form>
+                                </SheetContent>
+                            </Sheet>
+                        </div>
                     )}
                 </div>
 
@@ -426,9 +434,7 @@ export default function UsersIndex({
                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={search}
-                            onChange={(e) =>
-                                handleSearchChange(e.target.value)
-                            }
+                            onChange={(e) => handleSearchChange(e.target.value)}
                             placeholder="Search by name or email..."
                             className="pl-9"
                         />
@@ -484,6 +490,36 @@ export default function UsersIndex({
                     </div>
                 )}
 
+                <Dialog open={pullAgentsOpen} onOpenChange={setPullAgentsOpen}>
+                    <DialogContent>
+                        <DialogTitle>Pull new agents?</DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                            This will fetch the latest agents from the training
+                            provider and create an account for each one not
+                            already registered. Existing emails are skipped.
+                        </p>
+
+                        <Form
+                            {...UserController.pullAgents.form()}
+                            onSuccess={() => setPullAgentsOpen(false)}
+                        >
+                            {({ processing }) => (
+                                <DialogFooter className="gap-2">
+                                    <DialogClose asChild>
+                                        <Button variant="secondary">
+                                            Cancel
+                                        </Button>
+                                    </DialogClose>
+                                    <Button type="submit" disabled={processing}>
+                                        {processing && <Spinner />}
+                                        Pull agents
+                                    </Button>
+                                </DialogFooter>
+                            )}
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+
                 <Dialog
                     open={bulkSuspendOpen}
                     onOpenChange={setBulkSuspendOpen}
@@ -494,8 +530,7 @@ export default function UsersIndex({
                             {selectedIds.length === 1 ? '' : 's'}?
                         </DialogTitle>
                         <p className="text-sm text-muted-foreground">
-                            They won&apos;t be able to log in until
-                            reactivated.
+                            They won&apos;t be able to log in until reactivated.
                         </p>
 
                         <Form
@@ -595,15 +630,9 @@ export default function UsersIndex({
                                         aria-label="Select all users"
                                     />
                                 </th>
-                                <th className="px-4 py-3 font-medium">
-                                    Name
-                                </th>
-                                <th className="px-4 py-3 font-medium">
-                                    Email
-                                </th>
-                                <th className="px-4 py-3 font-medium">
-                                    Role
-                                </th>
+                                <th className="px-4 py-3 font-medium">Name</th>
+                                <th className="px-4 py-3 font-medium">Email</th>
+                                <th className="px-4 py-3 font-medium">Role</th>
                                 <th className="px-4 py-3 font-medium">
                                     Status
                                 </th>
@@ -688,23 +717,20 @@ export default function UsersIndex({
                                             </div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            {(user.roles ?? []).map(
-                                                (role) => (
-                                                    <Badge
-                                                        key={role.id}
-                                                        variant="outline"
-                                                        className={
-                                                            ROLE_BADGE_CLASSES[
-                                                                role.name
-                                                            ]
-                                                        }
-                                                    >
-                                                        {ROLE_LABELS[
+                                            {(user.roles ?? []).map((role) => (
+                                                <Badge
+                                                    key={role.id}
+                                                    variant="outline"
+                                                    className={
+                                                        ROLE_BADGE_CLASSES[
                                                             role.name
-                                                        ] ?? role.name}
-                                                    </Badge>
-                                                ),
-                                            )}
+                                                        ]
+                                                    }
+                                                >
+                                                    {ROLE_LABELS[role.name] ??
+                                                        role.name}
+                                                </Badge>
+                                            ))}
                                         </td>
                                         <td className="px-4 py-3">
                                             <Badge
@@ -731,9 +757,7 @@ export default function UsersIndex({
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        disabled={
-                                                            !hasAnyAction
-                                                        }
+                                                        disabled={!hasAnyAction}
                                                     >
                                                         <MoreHorizontal className="size-4" />
                                                         <span className="sr-only">
@@ -817,14 +841,10 @@ export default function UsersIndex({
                                             </DropdownMenu>
 
                                             <Sheet
-                                                open={
-                                                    editingUserId === user.id
-                                                }
+                                                open={editingUserId === user.id}
                                                 onOpenChange={(open) =>
                                                     setEditingUserId(
-                                                        open
-                                                            ? user.id
-                                                            : null,
+                                                        open ? user.id : null,
                                                     )
                                                 }
                                             >
@@ -964,14 +984,11 @@ export default function UsersIndex({
 
                                             <Dialog
                                                 open={
-                                                    suspendingUserId ===
-                                                    user.id
+                                                    suspendingUserId === user.id
                                                 }
                                                 onOpenChange={(open) =>
                                                     setSuspendingUserId(
-                                                        open
-                                                            ? user.id
-                                                            : null,
+                                                        open ? user.id : null,
                                                     )
                                                 }
                                             >
@@ -980,8 +997,8 @@ export default function UsersIndex({
                                                         Suspend {user.name}?
                                                     </DialogTitle>
                                                     <p className="text-sm text-muted-foreground">
-                                                        They won&apos;t be
-                                                        able to log in until
+                                                        They won&apos;t be able
+                                                        to log in until
                                                         reactivated.
                                                     </p>
 
@@ -995,9 +1012,7 @@ export default function UsersIndex({
                                                             )
                                                         }
                                                     >
-                                                        {({
-                                                            processing,
-                                                        }) => (
+                                                        {({ processing }) => (
                                                             <DialogFooter className="gap-2">
                                                                 <DialogClose
                                                                     asChild
@@ -1025,14 +1040,11 @@ export default function UsersIndex({
 
                                             <Dialog
                                                 open={
-                                                    deletingUserId ===
-                                                    user.id
+                                                    deletingUserId === user.id
                                                 }
                                                 onOpenChange={(open) =>
                                                     setDeletingUserId(
-                                                        open
-                                                            ? user.id
-                                                            : null,
+                                                        open ? user.id : null,
                                                     )
                                                 }
                                             >
@@ -1041,8 +1053,7 @@ export default function UsersIndex({
                                                         Delete {user.name}?
                                                     </DialogTitle>
                                                     <p className="text-sm text-muted-foreground">
-                                                        This cannot be
-                                                        undone.
+                                                        This cannot be undone.
                                                     </p>
 
                                                     <Form
@@ -1055,9 +1066,7 @@ export default function UsersIndex({
                                                             )
                                                         }
                                                     >
-                                                        {({
-                                                            processing,
-                                                        }) => (
+                                                        {({ processing }) => (
                                                             <DialogFooter className="gap-2">
                                                                 <DialogClose
                                                                     asChild

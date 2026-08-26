@@ -13,6 +13,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('users/bulk-suspend', [UserController::class, 'bulkSuspend'])->name('users.bulk-suspend');
     Route::post('users/bulk-destroy', [UserController::class, 'bulkDestroy'])->name('users.bulk-destroy');
+    Route::post('users/pull-agents', [UserController::class, 'pullAgents'])->name('users.pull-agents');
 
     Route::post('users/{user}/impersonate', [ImpersonateController::class, 'store'])->name('users.impersonate');
 });

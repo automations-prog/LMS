@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Jobs\PullAgentsFromCustomerApiJob;
 use App\Models\User;
 use App\Notifications\AgentInviteNotification;
 use App\Policies\UserPolicy;
@@ -167,6 +168,23 @@ class UserController extends Controller
         $user->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User deleted.')]);
+
+        return back();
+    }
+
+    /**
+     * Queue a pull of new agents from the Customer API.
+     */
+    public function pullAgents(Request $request): RedirectResponse
+    {
+        Gate::authorize('create', User::class);
+
+        PullAgentsFromCustomerApiJob::dispatch();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Pull started. New agents will appear shortly.'),
+        ]);
 
         return back();
     }
