@@ -1,11 +1,19 @@
-{{DomainURL}}/services/CustomerApi.svc/locations/:locationId/trainingprogress?PageIndex=0&PageSize=50&includeChildren=false
+{{DomainURL}}/services/CustomerApi.svc/users/:userId/trainingprogress
 
-we will use .env for saving this values DomainURL,apiKey,locationId
+this is the endpoint for getting the training progress of a user
 
-check also the pagination here,
+userId = excel_id
 
-sample response, @test.json
+so we will save this data in a pivot table
 
-so in the admin user page we will add a new button, Pulled New Agents so this will call this api and save the user
-xcel_id = id,email, then the password will be a default "password"
-the other data in response will be save to meta data
+save this as meta_data because it will be a json file
+
+in the response just get only the "TrainingPrograms" array
+
+then save to metadata
+
+inside the onboarding page, we will have a button that will take the user to the training progress page
+
+the training progress page will have a cards component that will display the progress of the user
+
+so the admin will be able to see the progress of the agents

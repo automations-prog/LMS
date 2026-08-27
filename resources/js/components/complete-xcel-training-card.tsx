@@ -1,5 +1,5 @@
-import { Form } from '@inertiajs/react';
-import { CalendarClock, ListChecks, Target } from 'lucide-react';
+import { Form, Link } from '@inertiajs/react';
+import { CalendarClock, LineChart, ListChecks, Target } from 'lucide-react';
 import type { ComponentType } from 'react';
 import TrainingController from '@/actions/App/Http/Controllers/TrainingController';
 import FileInput from '@/components/file-input';
@@ -12,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { StageIcon } from '@/components/ui/stage-icon';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ONBOARDING_ICONS } from '@/lib/onboarding-icons';
+import { show as trainingProgressShow } from '@/routes/training-progress';
 
 function InfoBlock({
     icon: Icon,
@@ -101,6 +102,13 @@ export default function CompleteXcelTrainingCard({
                     </a>{' '}
                     in the channel.
                 </p>
+
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                    <Link href={trainingProgressShow()}>
+                        <LineChart className="size-4" />
+                        View live training progress
+                    </Link>
+                </Button>
 
                 <Separator />
 

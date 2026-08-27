@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Generator;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -23,16 +24,13 @@ class CustomerApiClient
      */
     public function fetchTrainingProgressPage(int $pageIndex): array
     {
-        $domain = $this->domain ?? config('services.customer_api.domain');
         $locationId = $this->locationId ?? config('services.customer_api.location_id');
-        $apiKey = $this->apiKey ?? config('services.customer_api.key');
 
-        if (! $domain || ! $locationId || ! $apiKey) {
-            throw new RuntimeException('Customer API is not configured. Set CUSTOMER_API_DOMAIN, CUSTOMER_API_KEY, and CUSTOMER_API_LOCATION_ID.');
+        if (! $locationId) {
+            throw new RuntimeException('Customer API is not configured. Set CUSTOMER_API_LOCATION_ID.');
         }
 
-        $response = Http::withHeaders(['X-OCD-ApiKey' => $apiKey])
-            ->baseUrl(rtrim($domain, '/'))
+        $response = $this->request()
             ->get("/services/CustomerApi.svc/locations/{$locationId}/trainingprogress", [
                 'PageIndex' => $pageIndex,
                 'PageSize' => self::PAGE_SIZE,
@@ -41,6 +39,37 @@ class CustomerApiClient
             ->throw();
 
         return $response->json();
+    }
+
+    /**
+     * Fetch one user's training progress report.
+     *
+     * @return array<string, mixed>
+     */
+    public function fetchUserTrainingProgress(string $userId): array
+    {
+        $response = $this->request()
+            ->get("/services/CustomerApi.svc/users/{$userId}/trainingprogress")
+            ->throw();
+
+        return $response->json();
+    }
+
+    /**
+     * A pending HTTP request pre-configured with the Customer API's base
+     * URL and auth header, shared by every endpoint this client calls.
+     */
+    private function request(): PendingRequest
+    {
+        $domain = $this->domain ?? config('services.customer_api.domain');
+        $apiKey = $this->apiKey ?? config('services.customer_api.key');
+
+        if (! $domain || ! $apiKey) {
+            throw new RuntimeException('Customer API is not configured. Set CUSTOMER_API_DOMAIN and CUSTOMER_API_KEY.');
+        }
+
+        return Http::withHeaders(['X-OCD-ApiKey' => $apiKey])
+            ->baseUrl(rtrim($domain, '/'));
     }
 
     /**

@@ -8,6 +8,7 @@ import {
     FileCheck2,
     Fingerprint,
     FileText,
+    LineChart,
     MapPin,
     Monitor,
     ShieldAlert,
@@ -47,6 +48,7 @@ import {
     TRAINING_STATUS_LABELS,
 } from '@/lib/onboarding-decisions';
 import { index } from '@/routes/onboarding';
+import { showForUser as trainingProgressShowForUser } from '@/routes/training-progress';
 import type { OnboardingAgent } from '@/types/onboarding';
 
 const LINE_OF_AUTHORITY_OPTIONS: {
@@ -536,13 +538,29 @@ export default function OnboardingShow({ agent }: Props) {
                                 <CardHeader>
                                     <div className="flex items-center justify-between gap-4">
                                         <CardTitle>XCEL Training</CardTitle>
-                                        {completion && (
-                                            <Badge variant="outline">
-                                                {TRAINING_STATUS_LABELS[
-                                                    completion.status
-                                                ] ?? completion.status}
-                                            </Badge>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {completion && (
+                                                <Badge variant="outline">
+                                                    {TRAINING_STATUS_LABELS[
+                                                        completion.status
+                                                    ] ?? completion.status}
+                                                </Badge>
+                                            )}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                asChild
+                                            >
+                                                <Link
+                                                    href={trainingProgressShowForUser(
+                                                        agent.id,
+                                                    )}
+                                                >
+                                                    <LineChart className="size-4" />
+                                                    View live progress
+                                                </Link>
+                                            </Button>
+                                        </div>
                                     </div>
                                 </CardHeader>
 
