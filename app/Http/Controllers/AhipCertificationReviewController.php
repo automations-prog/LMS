@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AhipCertification;
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Notifications\AhipCertificationDecisionNotification;
 use Illuminate\Http\RedirectResponse;
@@ -39,6 +40,7 @@ class AhipCertificationReviewController extends Controller
                 AhipCertification::STATUS_REJECTED,
             ])],
             'note' => [Rule::requiredIf($request->input('status') === AhipCertification::STATUS_REJECTED), 'nullable', 'string', 'max:2000'],
+            'expires_at' => ['nullable', 'date'],
         ]);
 
         // No-op if the decision doesn't actually change anything.
@@ -46,12 +48,21 @@ class AhipCertificationReviewController extends Controller
             return back();
         }
 
+        $previousStatus = $ahipCertification->status;
+
         $ahipCertification->update([
             'status' => $validated['status'],
             'note' => $validated['note'] ?? null,
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
+            // Only meaningful once verified — AHIP certifications renew
+            // annually, so this drives next season's renewal reminder.
+            'expires_at' => $validated['status'] === AhipCertification::STATUS_VERIFIED
+                ? $validated['expires_at'] ?? null
+                : null,
         ]);
+
+        AuditLog::record($ahipCertification, $request->user(), 'ahip_certification.decision', $previousStatus, $validated['status'], $validated['note'] ?? null);
 
         // Only verified/rejected are decisions worth emailing the agent
         // about — reopening a case for further review isn't an outcome yet.
@@ -99,12 +110,16 @@ class AhipCertificationReviewController extends Controller
                 continue;
             }
 
+            $previousStatus = $certification->status;
+
             $certification->update([
                 'status' => $validated['status'],
                 'note' => $validated['note'] ?? null,
                 'reviewed_by' => $request->user()->id,
                 'reviewed_at' => now(),
             ]);
+
+            AuditLog::record($certification, $request->user(), 'ahip_certification.decision', $previousStatus, $validated['status'], $validated['note'] ?? null);
 
             if ($validated['status'] !== AhipCertification::STATUS_PENDING_REVIEW) {
                 $user->notify(new AhipCertificationDecisionNotification($validated['status'], $validated['note'] ?? null));

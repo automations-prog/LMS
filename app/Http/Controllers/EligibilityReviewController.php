@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\EligibilityAttestation;
 use App\Models\User;
 use App\Notifications\EligibilityDecisionNotification;
@@ -57,11 +58,15 @@ class EligibilityReviewController extends Controller
             return back();
         }
 
+        $previousStatus = $eligibilityAttestation->status;
+
         $eligibilityAttestation->update([
             'status' => $validated['status'],
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
         ]);
+
+        AuditLog::record($eligibilityAttestation, $request->user(), 'eligibility.decision', $previousStatus, $validated['status']);
 
         // Only cleared/not_eligible are decisions worth emailing the agent
         // about — reopening a case for further review isn't an outcome yet.
@@ -108,11 +113,15 @@ class EligibilityReviewController extends Controller
                 continue;
             }
 
+            $previousStatus = $attestation->status;
+
             $attestation->update([
                 'status' => $validated['status'],
                 'reviewed_by' => $request->user()->id,
                 'reviewed_at' => now(),
             ]);
+
+            AuditLog::record($attestation, $request->user(), 'eligibility.decision', $previousStatus, $validated['status']);
 
             if (! in_array($validated['status'], EligibilityAttestation::UNDER_REVIEW_STATUSES, true)) {
                 $user->notify(new EligibilityDecisionNotification($validated['status']));
@@ -179,6 +188,66 @@ class EligibilityReviewController extends Controller
      * already-checked stage leaves its original timestamp untouched);
      * anything absent from the list is cleared back to null.
      */
+    /**
+     * Advance a batch of agents' contracting to (at least) the given stage
+     * at once. Additive only — an agent already further along than the
+     * target stage, or missing an attestation entirely, is left untouched
+     * rather than rewound or failing the batch. Every stage in the target's
+     * prerequisite chain (per ContractingStages::DEPENDENCIES) is stamped
+     * too, so "advance to issued" also confirms and forwards agents who
+     * hadn't been marked at those earlier stages yet.
+     */
+    public function bulkUpdateContractingStages(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('onboarding.review'), 403);
+
+        $validated = $request->validate([
+            'user_ids' => ['required', 'array'],
+            'user_ids.*' => ['integer'],
+            'stage' => ['required', Rule::in(ContractingStages::ALL)],
+        ]);
+
+        $chain = [$validated['stage']];
+        $cursor = $validated['stage'];
+
+        while (isset(ContractingStages::DEPENDENCIES[$cursor])) {
+            $cursor = ContractingStages::DEPENDENCIES[$cursor];
+            $chain[] = $cursor;
+        }
+
+        $attestations = EligibilityAttestation::query()
+            ->whereIn('user_id', $validated['user_ids'])
+            ->get();
+
+        $updated = 0;
+
+        foreach ($attestations as $attestation) {
+            $updates = [];
+
+            foreach ($chain as $stage) {
+                $column = ContractingStages::column($stage);
+
+                if ($attestation->{$column} === null) {
+                    $updates[$column] = now();
+                }
+            }
+
+            if ($updates === []) {
+                continue;
+            }
+
+            $attestation->update($updates);
+            $updated++;
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => trans_choice(':count agent advanced.|:count agents advanced.', $updated, ['count' => $updated]),
+        ]);
+
+        return back();
+    }
+
     public function updateContractingStages(Request $request, EligibilityAttestation $eligibilityAttestation): RedirectResponse
     {
         Gate::authorize('review', $eligibilityAttestation);

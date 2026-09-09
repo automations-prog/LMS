@@ -16,11 +16,12 @@ class LicenseSubmissionPolicy
     }
 
     /**
-     * Determine whether the user can view the given license submission.
+     * Determine whether the user can view the given license submission —
+     * either a reviewer, or the agent it belongs to viewing their own copy.
      */
     public function view(User $user, LicenseSubmission $licenseSubmission): bool
     {
-        return $user->can('onboarding.review');
+        return $user->can('onboarding.review') || $user->id === $licenseSubmission->user_id;
     }
 
     /**

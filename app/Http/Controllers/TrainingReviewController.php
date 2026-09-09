@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\TrainingCompletion;
 use App\Models\User;
 use App\Notifications\TrainingDecisionNotification;
@@ -46,12 +47,16 @@ class TrainingReviewController extends Controller
             return back();
         }
 
+        $previousStatus = $trainingCompletion->status;
+
         $trainingCompletion->update([
             'status' => $validated['status'],
             'note' => $validated['note'] ?? null,
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
         ]);
+
+        AuditLog::record($trainingCompletion, $request->user(), 'training.decision', $previousStatus, $validated['status'], $validated['note'] ?? null);
 
         // Only verified/rejected are decisions worth emailing the agent
         // about — reopening a case for further review isn't an outcome yet.
@@ -98,12 +103,16 @@ class TrainingReviewController extends Controller
                 continue;
             }
 
+            $previousStatus = $completion->status;
+
             $completion->update([
                 'status' => $validated['status'],
                 'note' => $validated['note'] ?? null,
                 'reviewed_by' => $request->user()->id,
                 'reviewed_at' => now(),
             ]);
+
+            AuditLog::record($completion, $request->user(), 'training.decision', $previousStatus, $validated['status'], $validated['note'] ?? null);
 
             if ($validated['status'] !== TrainingCompletion::STATUS_PENDING_REVIEW) {
                 $user->notify(new TrainingDecisionNotification($validated['status'], $validated['note'] ?? null));

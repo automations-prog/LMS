@@ -4,6 +4,7 @@ use App\Models\AhipCertification;
 use App\Models\EligibilityAttestation;
 use App\Models\User;
 use App\Notifications\AhipCertificationDecisionNotification;
+use App\Notifications\NewSubmissionForReviewNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
@@ -32,6 +33,23 @@ test('an agent with no record can submit an AHIP certificate', function () {
 
     expect($certification->status)->toBe(AhipCertification::STATUS_PENDING_REVIEW);
     Storage::disk('local')->assertExists($certification->certificate_path);
+});
+
+test('submitting an AHIP certificate notifies every reviewer', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($agent)->create();
+
+    $this->actingAs($agent)
+        ->post(route('ahip-certification.store'), ['certificate_file' => ahipCertificateFile()])
+        ->assertRedirect(route('dashboard'));
+
+    Notification::assertSentTo($admin, NewSubmissionForReviewNotification::class);
 });
 
 test('an agent cannot submit before eligibility is cleared', function () {
@@ -162,6 +180,33 @@ test('verifying notifies the agent, reopening to pending review does not', funct
 
     expect($certification->fresh()->status)->toBe(AhipCertification::STATUS_PENDING_REVIEW);
     Notification::assertNothingSent();
+});
+
+test('verifying with an expiration date stores it, rejecting clears it', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $certification = AhipCertification::factory()->for($agent)->create();
+
+    $this->actingAs($admin)
+        ->post(route('ahip-certification.decision', $certification), [
+            'status' => 'verified',
+            'expires_at' => '2027-12-31',
+        ])
+        ->assertRedirect();
+
+    expect($certification->fresh()->expires_at->toDateString())->toBe('2027-12-31');
+
+    $this->actingAs($admin)
+        ->post(route('ahip-certification.decision', $certification), [
+            'status' => 'rejected',
+            'note' => 'Wrong plan year, please re-upload.',
+        ])
+        ->assertRedirect();
+
+    expect($certification->fresh()->expires_at)->toBeNull();
 });
 
 test('a non-reviewer agent is forbidden from all admin AHIP certification routes', function () {

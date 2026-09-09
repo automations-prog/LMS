@@ -135,11 +135,29 @@ function NotSubmitted({ label }: { label: string }) {
     );
 }
 
-type Props = {
-    agent: OnboardingAgent;
+type AuditLogEntry = {
+    id: number;
+    action: string;
+    from_status: string | null;
+    to_status: string | null;
+    note: string | null;
+    created_at: string;
+    actor: { name: string } | null;
 };
 
-export default function OnboardingShow({ agent }: Props) {
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+    'eligibility.decision': 'Eligibility decision',
+    'training.decision': 'XCEL Training decision',
+    'license.decision': 'License Copy decision',
+    'ahip_certification.decision': 'AHIP Certification decision',
+};
+
+type Props = {
+    agent: OnboardingAgent;
+    auditLog: AuditLogEntry[];
+};
+
+export default function OnboardingShow({ agent, auditLog }: Props) {
     // `processing` from each Form render-prop is shared by that whole
     // <form>, not per-button — track which button was actually clicked so
     // only that one shows a spinner while the request is in flight.
@@ -1086,6 +1104,29 @@ export default function OnboardingShow({ agent }: Props) {
                                                                 />
                                                             </div>
 
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="license-expires-at">
+                                                                    Expires on
+                                                                    (if
+                                                                    verifying)
+                                                                </Label>
+                                                                <input
+                                                                    id="license-expires-at"
+                                                                    name="expires_at"
+                                                                    type="date"
+                                                                    defaultValue={
+                                                                        submission.expires_at ??
+                                                                        ''
+                                                                    }
+                                                                    className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                                />
+                                                                <InputError
+                                                                    message={
+                                                                        errors.expires_at
+                                                                    }
+                                                                />
+                                                            </div>
+
                                                             <div className="flex flex-col gap-3">
                                                                 {LICENSE_DECISION_OPTIONS.map(
                                                                     ({
@@ -1302,6 +1343,30 @@ export default function OnboardingShow({ agent }: Props) {
                                                                         <InputError
                                                                             message={
                                                                                 errors.note
+                                                                            }
+                                                                        />
+                                                                    </div>
+
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="ahip-expires-at">
+                                                                            Expires
+                                                                            on
+                                                                            (if
+                                                                            verifying)
+                                                                        </Label>
+                                                                        <input
+                                                                            id="ahip-expires-at"
+                                                                            name="expires_at"
+                                                                            type="date"
+                                                                            defaultValue={
+                                                                                certification.expires_at ??
+                                                                                ''
+                                                                            }
+                                                                            className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                                        />
+                                                                        <InputError
+                                                                            message={
+                                                                                errors.expires_at
                                                                             }
                                                                         />
                                                                     </div>
@@ -1654,6 +1719,71 @@ export default function OnboardingShow({ agent }: Props) {
                         </>
                     )}
                 </div>
+
+                {auditLog.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Activity log</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Every review decision recorded for this agent,
+                                most recent first.
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="space-y-4">
+                                {auditLog.map((entry) => (
+                                    <li
+                                        key={entry.id}
+                                        className="flex items-start gap-3 border-b border-sidebar-border/70 pb-4 text-sm last:border-0 last:pb-0 dark:border-sidebar-border"
+                                    >
+                                        <LineChart className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                        <div className="space-y-0.5">
+                                            <p>
+                                                <span className="font-medium">
+                                                    {entry.actor?.name ??
+                                                        'System'}
+                                                </span>{' '}
+                                                recorded a{' '}
+                                                {(
+                                                    AUDIT_ACTION_LABELS[
+                                                        entry.action
+                                                    ] ?? entry.action
+                                                ).toLowerCase()}
+                                                {entry.from_status &&
+                                                    entry.to_status && (
+                                                        <>
+                                                            {': '}
+                                                            <span className="font-medium">
+                                                                {
+                                                                    entry.from_status
+                                                                }
+                                                            </span>{' '}
+                                                            →{' '}
+                                                            <span className="font-medium">
+                                                                {
+                                                                    entry.to_status
+                                                                }
+                                                            </span>
+                                                        </>
+                                                    )}
+                                            </p>
+                                            {entry.note && (
+                                                <p className="text-muted-foreground">
+                                                    “{entry.note}”
+                                                </p>
+                                            )}
+                                            <p className="text-xs text-muted-foreground">
+                                                {dateFormatter.format(
+                                                    new Date(entry.created_at),
+                                                )}
+                                            </p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </>
     );

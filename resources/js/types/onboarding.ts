@@ -43,6 +43,7 @@ export type LicenseSubmission = {
     id: number;
     status: string;
     note: string | null;
+    expires_at: string | null;
     created_at: string;
     reviewed_at: string | null;
     reviewer: { name: string } | null;
@@ -52,6 +53,7 @@ export type AhipCertification = {
     id: number;
     status: string;
     note: string | null;
+    expires_at: string | null;
     created_at: string;
     reviewed_at: string | null;
     reviewer: { name: string } | null;

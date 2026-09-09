@@ -58,10 +58,17 @@ class UserPolicy
 
     /**
      * Determine whether the user can impersonate the given user.
+     *
+     * The target must be active: `EnsureAccountIsActive` force-logs-out any
+     * inactive account on its very next request, so impersonating one (an
+     * invited-but-not-yet-activated agent, or a suspended one) would log
+     * the target in for a single request and then immediately bounce the
+     * impersonator to the login page with a "suspended" message.
      */
     public function impersonate(User $user, User $target): bool
     {
         return $user->id !== $target->id
+            && $target->is_active
             && $user->can('users.impersonate')
             && $this->canManageTarget($user, $target);
     }

@@ -38,4 +38,15 @@ class AhipCertificationFactory extends Factory
             'note' => fake()->sentence(),
         ]);
     }
+
+    /**
+     * Indicate that the certificate was verified, with an expiration date.
+     */
+    public function verified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => AhipCertification::STATUS_VERIFIED,
+            'expires_at' => now()->addYear(),
+        ]);
+    }
 }

@@ -75,10 +75,31 @@ class OnboardingReviewController extends Controller
         abort_unless($request->user()->can('onboarding.review'), 403);
         abort_unless($user->hasRole('agent'), 404);
 
-        $user->load(['eligibilityAttestation.reviewer', 'trainingCompletion.reviewer', 'licenseSubmission.reviewer', 'ahipCertification.reviewer']);
+        $user->load([
+            'eligibilityAttestation.reviewer',
+            'eligibilityAttestation.auditLogs.actor',
+            'trainingCompletion.reviewer',
+            'trainingCompletion.auditLogs.actor',
+            'licenseSubmission.reviewer',
+            'licenseSubmission.auditLogs.actor',
+            'ahipCertification.reviewer',
+            'ahipCertification.auditLogs.actor',
+        ]);
+
+        $auditLog = collect([
+            $user->eligibilityAttestation?->auditLogs,
+            $user->trainingCompletion?->auditLogs,
+            $user->licenseSubmission?->auditLogs,
+            $user->ahipCertification?->auditLogs,
+        ])
+            ->filter()
+            ->flatten()
+            ->sortByDesc('id')
+            ->values();
 
         return Inertia::render('admin/onboarding/show', [
             'agent' => $user,
+            'auditLog' => $auditLog,
         ]);
     }
 }

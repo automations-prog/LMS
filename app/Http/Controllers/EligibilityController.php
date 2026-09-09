@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEligibilityAttestationRequest;
 use App\Models\EligibilityAttestation;
 use App\Models\TrainingCompletion;
+use App\Models\User;
+use App\Notifications\NewSubmissionForReviewNotification;
 use App\Support\LinesOfAuthority;
 use App\Support\ProctoringTypes;
 use App\Support\UsStates;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -56,6 +59,8 @@ class EligibilityController extends Controller
         $validated['status'] = EligibilityAttestation::STATUS_PENDING;
 
         EligibilityAttestation::create($validated);
+
+        Notification::send(User::onboardingReviewers(), new NewSubmissionForReviewNotification($request->user(), 'eligibility attestation'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Eligibility attestation submitted.')]);
 

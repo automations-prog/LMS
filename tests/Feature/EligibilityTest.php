@@ -4,6 +4,7 @@ use App\Models\EligibilityAttestation;
 use App\Models\TrainingCompletion;
 use App\Models\User;
 use App\Notifications\EligibilityDecisionNotification;
+use App\Notifications\NewSubmissionForReviewNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
@@ -35,6 +36,22 @@ test('a submission with no felony still starts pending, not auto-cleared', funct
     $attestation = $agent->eligibilityAttestation()->first();
 
     expect($attestation->status)->toBe(EligibilityAttestation::STATUS_PENDING);
+});
+
+test('submitting an eligibility attestation notifies every reviewer', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+
+    $this->actingAs($agent)
+        ->post(route('eligibility.store'), eligibilityPayload())
+        ->assertRedirect(route('eligibility.pending'));
+
+    Notification::assertSentTo($admin, NewSubmissionForReviewNotification::class);
 });
 
 test('a submission with a felony disclosed also starts pending, and stores the details', function () {
@@ -95,6 +112,30 @@ test('guests are redirected to login on onboarding and admin eligibility routes'
     $this->post(route('eligibility.store'), eligibilityPayload())->assertRedirect(route('login'));
     $this->get(route('eligibility.pending'))->assertRedirect(route('login'));
     $this->get(route('eligibility.document', $attestation))->assertRedirect(route('login'));
+});
+
+test('an agent can view their own work authorization document, but not another agent\'s', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->for($agent)->create([
+        'work_authorization_path' => 'work-authorization/own.pdf',
+    ]);
+    Storage::disk('local')->put($attestation->work_authorization_path, 'own document contents');
+
+    $this->actingAs($agent)
+        ->get(route('eligibility.document', $attestation))
+        ->assertOk();
+
+    $other = User::factory()->create();
+    $other->assignRole('agent');
+    $othersAttestation = EligibilityAttestation::factory()->for($other)->create([
+        'work_authorization_path' => 'work-authorization/other.pdf',
+    ]);
+    Storage::disk('local')->put($othersAttestation->work_authorization_path, 'other document contents');
+
+    $this->actingAs($agent)
+        ->get(route('eligibility.document', $othersAttestation))
+        ->assertForbidden();
 });
 
 test('an agent with a decided attestation is redirected to the dashboard from the form', function () {
@@ -303,7 +344,6 @@ test('agent cannot access admin eligibility routes', function () {
     $agent->assignRole('agent');
     $attestation = EligibilityAttestation::factory()->flaggedForWaiver()->for($agent)->create();
 
-    $this->actingAs($agent)->get(route('eligibility.document', $attestation))->assertForbidden();
     $this->actingAs($agent)
         ->post(route('eligibility.decision', $attestation), ['status' => 'cleared'])
         ->assertForbidden();

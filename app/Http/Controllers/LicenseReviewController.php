@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\LicenseSubmission;
 use App\Models\User;
 use App\Notifications\LicenseDecisionNotification;
@@ -39,6 +40,7 @@ class LicenseReviewController extends Controller
                 LicenseSubmission::STATUS_REJECTED,
             ])],
             'note' => [Rule::requiredIf($request->input('status') === LicenseSubmission::STATUS_REJECTED), 'nullable', 'string', 'max:2000'],
+            'expires_at' => ['nullable', 'date'],
         ]);
 
         // No-op if the decision doesn't actually change anything.
@@ -46,12 +48,21 @@ class LicenseReviewController extends Controller
             return back();
         }
 
+        $previousStatus = $licenseSubmission->status;
+
         $licenseSubmission->update([
             'status' => $validated['status'],
             'note' => $validated['note'] ?? null,
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
+            // Only meaningful once verified — a rejected/pending copy has
+            // no confirmed license to expire yet.
+            'expires_at' => $validated['status'] === LicenseSubmission::STATUS_VERIFIED
+                ? $validated['expires_at'] ?? null
+                : null,
         ]);
+
+        AuditLog::record($licenseSubmission, $request->user(), 'license.decision', $previousStatus, $validated['status'], $validated['note'] ?? null);
 
         // Only verified/rejected are decisions worth emailing the agent
         // about — reopening a case for further review isn't an outcome yet.
@@ -99,12 +110,16 @@ class LicenseReviewController extends Controller
                 continue;
             }
 
+            $previousStatus = $submission->status;
+
             $submission->update([
                 'status' => $validated['status'],
                 'note' => $validated['note'] ?? null,
                 'reviewed_by' => $request->user()->id,
                 'reviewed_at' => now(),
             ]);
+
+            AuditLog::record($submission, $request->user(), 'license.decision', $previousStatus, $validated['status'], $validated['note'] ?? null);
 
             if ($validated['status'] !== LicenseSubmission::STATUS_PENDING_REVIEW) {
                 $user->notify(new LicenseDecisionNotification($validated['status'], $validated['note'] ?? null));

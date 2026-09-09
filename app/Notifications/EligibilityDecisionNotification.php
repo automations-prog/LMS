@@ -24,7 +24,29 @@ class EligibilityDecisionNotification extends Notification implements ShouldQueu
      */
     public function via(User $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    /**
+     * Get the array representation of the notification, for the in-app
+     * notification bell.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(User $notifiable): array
+    {
+        $cleared = $this->status === EligibilityAttestation::STATUS_CLEARED;
+
+        return [
+            'title' => $cleared
+                ? __('Your eligibility review is complete')
+                : __('Update on your eligibility review'),
+            'body' => $cleared
+                ? __('Your eligibility attestation has been reviewed and cleared.')
+                : __('Your eligibility attestation has been reviewed, and you have not been cleared to proceed.'),
+            'level' => $cleared ? 'success' : 'error',
+            'action_url' => route('dashboard'),
+        ];
     }
 
     /**

@@ -4,6 +4,7 @@ use App\Models\EligibilityAttestation;
 use App\Models\LicenseSubmission;
 use App\Models\User;
 use App\Notifications\LicenseDecisionNotification;
+use App\Notifications\NewSubmissionForReviewNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
@@ -32,6 +33,23 @@ test('an agent with no record can submit a license copy', function () {
 
     expect($submission->status)->toBe(LicenseSubmission::STATUS_PENDING_REVIEW);
     Storage::disk('local')->assertExists($submission->license_path);
+});
+
+test('submitting a license copy notifies every reviewer', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($agent)->create();
+
+    $this->actingAs($agent)
+        ->post(route('license.store'), ['license_file' => licenseFile()])
+        ->assertRedirect(route('dashboard'));
+
+    Notification::assertSentTo($admin, NewSubmissionForReviewNotification::class);
 });
 
 test('an agent cannot submit before eligibility is cleared', function () {
@@ -162,6 +180,33 @@ test('verifying notifies the agent, reopening to pending review does not', funct
 
     expect($submission->fresh()->status)->toBe(LicenseSubmission::STATUS_PENDING_REVIEW);
     Notification::assertNothingSent();
+});
+
+test('verifying with an expiration date stores it, rejecting clears it', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $submission = LicenseSubmission::factory()->for($agent)->create();
+
+    $this->actingAs($admin)
+        ->post(route('license.decision', $submission), [
+            'status' => 'verified',
+            'expires_at' => '2027-06-15',
+        ])
+        ->assertRedirect();
+
+    expect($submission->fresh()->expires_at->toDateString())->toBe('2027-06-15');
+
+    $this->actingAs($admin)
+        ->post(route('license.decision', $submission), [
+            'status' => 'rejected',
+            'note' => 'Expired copy, please re-upload.',
+        ])
+        ->assertRedirect();
+
+    expect($submission->fresh()->expires_at)->toBeNull();
 });
 
 test('a non-license-reviewer agent is forbidden from all admin license routes', function () {

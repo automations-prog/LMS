@@ -1,4 +1,5 @@
 import { Form } from '@inertiajs/react';
+import { ChevronsRight } from 'lucide-react';
 import { useState } from 'react';
 import AhipCertificationReviewController from '@/actions/App/Http/Controllers/AhipCertificationReviewController';
 import EligibilityReviewController from '@/actions/App/Http/Controllers/EligibilityReviewController';
@@ -24,6 +25,14 @@ import {
     LICENSE_DECISION_OPTIONS,
     TRAINING_DECISION_OPTIONS,
 } from '@/lib/onboarding-decisions';
+
+const CONTRACTING_STAGE_OPTIONS: { value: string; label: string }[] = [
+    { value: 'confirmed', label: 'License & cert confirmed' },
+    { value: 'forwarded', label: 'Forwarded for contracting' },
+    { value: 'issued', label: 'Appointment issued' },
+    { value: 'carrier_certs', label: 'Carrier certifications' },
+    { value: 'complete', label: 'Verified' },
+];
 
 type Props = {
     selectedCount: number;
@@ -56,6 +65,9 @@ export default function OnboardingBulkUpdateDialog({
     const [clickedAhipStatus, setClickedAhipStatus] = useState<string | null>(
         null,
     );
+    const [clickedContractingStage, setClickedContractingStage] = useState<
+        string | null
+    >(null);
 
     function handleSuccess() {
         onOpenChange(false);
@@ -326,6 +338,67 @@ export default function OnboardingBulkUpdateDialog({
                                                         <Spinner />
                                                     ) : (
                                                         <Icon />
+                                                    )}
+                                                    {label}
+                                                </Button>
+                                            ),
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    </section>
+
+                    <Separator />
+
+                    <section className="space-y-3">
+                        <h3 className="text-sm font-semibold">Contracting</h3>
+                        <p className="text-xs text-muted-foreground">
+                            Advances every selected agent to at least the chosen
+                            stage, stamping any earlier required stage they
+                            hadn't reached yet. Never rewinds an agent already
+                            further along.
+                        </p>
+
+                        <Form
+                            {...EligibilityReviewController.bulkUpdateContractingStages.form()}
+                            onSuccess={handleSuccess}
+                            className="space-y-3"
+                        >
+                            {({ processing }) => (
+                                <>
+                                    {selectedIds.map((id) => (
+                                        <input
+                                            key={id}
+                                            type="hidden"
+                                            name="user_ids[]"
+                                            value={id}
+                                        />
+                                    ))}
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {CONTRACTING_STAGE_OPTIONS.map(
+                                            ({ value, label }) => (
+                                                <Button
+                                                    key={value}
+                                                    type="submit"
+                                                    name="stage"
+                                                    value={value}
+                                                    variant="outline"
+                                                    className="justify-start"
+                                                    disabled={processing}
+                                                    onClick={() =>
+                                                        setClickedContractingStage(
+                                                            value,
+                                                        )
+                                                    }
+                                                >
+                                                    {processing &&
+                                                    clickedContractingStage ===
+                                                        value ? (
+                                                        <Spinner />
+                                                    ) : (
+                                                        <ChevronsRight />
                                                     )}
                                                     {label}
                                                 </Button>

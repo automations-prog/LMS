@@ -1,5 +1,5 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { Clock } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Clock, FileText, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import EligibilityController from '@/actions/App/Http/Controllers/EligibilityController';
 import AhipCertificationCard from '@/components/ahip-certification-card';
@@ -15,6 +15,7 @@ import { JourneyNodePath } from '@/components/ui/journey-node-path';
 import { JourneyTrailRow } from '@/components/ui/journey-trail-row';
 import { ONBOARDING_ICONS } from '@/lib/onboarding-icons';
 import { dashboard } from '@/routes';
+import { index as documentsIndex } from '@/routes/documents';
 import type { Auth } from '@/types';
 
 type JourneyStage = {
@@ -78,6 +79,68 @@ const JOURNEY_STEPS: JourneyStage[] = [
     },
 ];
 
+const EXPIRY_WARNING_DAYS = 30;
+
+function daysUntil(dateStr: string): number {
+    const target = new Date(`${dateStr}T00:00:00`).getTime();
+
+    return Math.ceil((target - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+function CredentialExpiryBanners({
+    licenseStatus,
+    licenseExpiresAt,
+    ahipStatus,
+    ahipExpiresAt,
+}: {
+    licenseStatus: 'pending_review' | 'verified' | 'rejected' | null;
+    licenseExpiresAt: string | null;
+    ahipStatus: 'pending_review' | 'verified' | 'rejected' | null;
+    ahipExpiresAt: string | null;
+}) {
+    const warnings = [
+        licenseStatus === 'verified' &&
+            licenseExpiresAt && {
+                key: 'license',
+                label: 'license',
+                days: daysUntil(licenseExpiresAt),
+            },
+        ahipStatus === 'verified' &&
+            ahipExpiresAt && {
+                key: 'ahip',
+                label: 'AHIP certification',
+                days: daysUntil(ahipExpiresAt),
+            },
+    ].filter((warning) => warning && warning.days <= EXPIRY_WARNING_DAYS) as {
+        key: string;
+        label: string;
+        days: number;
+    }[];
+
+    if (warnings.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="flex w-full flex-col gap-2">
+            {warnings.map((warning) => (
+                <div
+                    key={warning.key}
+                    className="flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                >
+                    <TriangleAlert className="size-4 shrink-0" />
+                    <span>
+                        {warning.days < 0
+                            ? `Your ${warning.label} has expired.`
+                            : `Your ${warning.label} expires in ${warning.days} day${warning.days === 1 ? '' : 's'}.`}{' '}
+                        Please renew it soon.
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 type Props = {
     eligibilityStatus: 'under_review' | 'cleared' | 'not_eligible';
     enrollmentCompleted: boolean;
@@ -88,8 +151,10 @@ type Props = {
     licenseApplicationSubmitted: boolean;
     licenseStatus: 'pending_review' | 'verified' | 'rejected' | null;
     licenseNote: string | null;
+    licenseExpiresAt: string | null;
     ahipStatus: 'pending_review' | 'verified' | 'rejected' | null;
     ahipNote: string | null;
+    ahipExpiresAt: string | null;
     contracting: {
         confirmed: boolean;
         forwarded: boolean;
@@ -109,8 +174,10 @@ export default function DashboardAgent({
     licenseApplicationSubmitted,
     licenseStatus,
     licenseNote,
+    licenseExpiresAt,
     ahipStatus,
     ahipNote,
+    ahipExpiresAt,
     contracting,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
@@ -179,9 +246,7 @@ export default function DashboardAgent({
         }
     }
 
-    const currentStep = JOURNEY_STEPS.find(
-        (step) => !isJourneyStepDone(step),
-    );
+    const currentStep = JOURNEY_STEPS.find((step) => !isJourneyStepDone(step));
 
     function markLicenseApplicationSubmitted() {
         setMarkingDone(true);
@@ -230,7 +295,22 @@ export default function DashboardAgent({
                     </p>
                 </div>
 
+                <Link
+                    href={documentsIndex()}
+                    className="absolute top-4 right-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                >
+                    <FileText className="size-4" />
+                    Your documents
+                </Link>
+
                 <div className="mt-16 flex w-full flex-col items-center gap-6">
+                    <CredentialExpiryBanners
+                        licenseStatus={licenseStatus}
+                        licenseExpiresAt={licenseExpiresAt}
+                        ahipStatus={ahipStatus}
+                        ahipExpiresAt={ahipExpiresAt}
+                    />
+
                     <div className="w-full rounded-xl border bg-card px-4 py-4">
                         <p className="mb-3 text-sm font-medium">
                             Your onboarding journey

@@ -35,6 +35,10 @@ test('a non-reviewer agent is forbidden from every bulk-decision route', functio
     $this->actingAs($agent)
         ->post(route('ahip-certification.bulk-decision'), ['user_ids' => [$agent->id], 'status' => 'verified'])
         ->assertForbidden();
+
+    $this->actingAs($agent)
+        ->post(route('eligibility.bulk-contracting-stages'), ['user_ids' => [$agent->id], 'stage' => 'confirmed'])
+        ->assertForbidden();
 });
 
 test('bulk eligibility decision updates every selected agent and skips agents without an attestation', function () {
@@ -178,4 +182,72 @@ test('bulk AHIP decision updates selected certifications and requires a note whe
 
     expect($certification->fresh()->status)->toBe(AhipCertification::STATUS_VERIFIED);
     Notification::assertSentTo($agent, AhipCertificationDecisionNotification::class);
+});
+
+test('bulk advancing to a stage stamps every required prerequisite not yet reached', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $attestation = EligibilityAttestation::factory()->for($agent)->create();
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.bulk-contracting-stages'), [
+            'user_ids' => [$agent->id],
+            'stage' => 'issued',
+        ])
+        ->assertRedirect();
+
+    $attestation->refresh();
+
+    expect($attestation->contracting_confirmed_at)->not->toBeNull();
+    expect($attestation->contracting_forwarded_at)->not->toBeNull();
+    expect($attestation->contracting_issued_at)->not->toBeNull();
+    expect($attestation->contracting_carrier_certs_at)->toBeNull();
+    expect($attestation->contracting_complete_at)->toBeNull();
+});
+
+test('bulk advancing to a stage never rewinds an agent already further along', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $completedAt = now()->subDay();
+    $attestation = EligibilityAttestation::factory()->for($agent)->create([
+        'contracting_confirmed_at' => $completedAt,
+        'contracting_forwarded_at' => $completedAt,
+        'contracting_issued_at' => $completedAt,
+        'contracting_complete_at' => $completedAt,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.bulk-contracting-stages'), [
+            'user_ids' => [$agent->id],
+            'stage' => 'confirmed',
+        ])
+        ->assertRedirect();
+
+    // Already-checked stages keep their original timestamp, and stages
+    // ahead of the requested one are left completely untouched.
+    expect($attestation->fresh()->contracting_confirmed_at->toDateTimeString())->toBe($completedAt->toDateTimeString());
+    expect($attestation->fresh()->contracting_complete_at)->not->toBeNull();
+});
+
+test('bulk advancing to a stage skips agents with no attestation at all', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+
+    $this->actingAs($admin)
+        ->post(route('eligibility.bulk-contracting-stages'), [
+            'user_ids' => [$agent->id],
+            'stage' => 'confirmed',
+        ])
+        ->assertRedirect();
+
+    expect($agent->fresh()->eligibilityAttestation)->toBeNull();
 });

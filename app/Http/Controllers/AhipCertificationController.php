@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAhipCertificationRequest;
 use App\Models\AhipCertification;
+use App\Models\User;
+use App\Notifications\NewSubmissionForReviewNotification;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -35,6 +38,8 @@ class AhipCertificationController extends Controller
                 'reviewed_at' => null,
             ],
         );
+
+        Notification::send(User::onboardingReviewers(), new NewSubmissionForReviewNotification($user, 'AHIP certification'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Certificate submitted.')]);
 

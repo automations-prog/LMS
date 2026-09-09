@@ -14,6 +14,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('onboarding/eligibility/submit-license-application', [EligibilityController::class, 'submitLicenseApplication'])->name('eligibility.submit-license-application');
 
     Route::post('admin/eligibility/bulk-decision', [EligibilityReviewController::class, 'bulkDecision'])->name('eligibility.bulk-decision');
+    Route::post('admin/eligibility/bulk-contracting-stages', [EligibilityReviewController::class, 'bulkUpdateContractingStages'])->name('eligibility.bulk-contracting-stages');
     Route::get('admin/eligibility/{eligibilityAttestation}/document', [EligibilityReviewController::class, 'document'])->name('eligibility.document');
     Route::post('admin/eligibility/{eligibilityAttestation}/decision', [EligibilityReviewController::class, 'decision'])->name('eligibility.decision');
     Route::post('admin/eligibility/{eligibilityAttestation}/line-of-authority', [EligibilityReviewController::class, 'updateLineOfAuthority'])->name('eligibility.line-of-authority.update');

@@ -16,11 +16,12 @@ class EligibilityAttestationPolicy
     }
 
     /**
-     * Determine whether the user can view the given attestation.
+     * Determine whether the user can view the given attestation — either a
+     * reviewer, or the agent it belongs to viewing their own document.
      */
     public function view(User $user, EligibilityAttestation $eligibilityAttestation): bool
     {
-        return $user->can('onboarding.review');
+        return $user->can('onboarding.review') || $user->id === $eligibilityAttestation->user_id;
     }
 
     /**

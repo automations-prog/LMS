@@ -654,7 +654,10 @@ export default function UsersIndex({
                                 const isSelf = user.id === auth.user.id;
                                 const canDelete = canEdit && !isSelf;
                                 const canImpersonateUser =
-                                    canImpersonate && canEdit && !isSelf;
+                                    canImpersonate &&
+                                    canEdit &&
+                                    !isSelf &&
+                                    user.is_active;
                                 const canToggleStatus = canEdit && !isSelf;
                                 const hasAnyAction =
                                     canImpersonateUser ||

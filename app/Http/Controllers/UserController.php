@@ -179,7 +179,7 @@ class UserController extends Controller
     {
         Gate::authorize('create', User::class);
 
-        PullAgentsFromCustomerApiJob::dispatch();
+        PullAgentsFromCustomerApiJob::dispatch($request->user());
 
         Inertia::flash('toast', [
             'type' => 'success',

@@ -16,11 +16,13 @@ class AhipCertificationPolicy
     }
 
     /**
-     * Determine whether the user can view the given AHIP certification.
+     * Determine whether the user can view the given AHIP certification —
+     * either a reviewer, or the agent it belongs to viewing their own
+     * certificate.
      */
     public function view(User $user, AhipCertification $ahipCertification): bool
     {
-        return $user->can('onboarding.review');
+        return $user->can('onboarding.review') || $user->id === $ahipCertification->user_id;
     }
 
     /**

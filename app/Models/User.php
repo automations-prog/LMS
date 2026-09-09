@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -26,6 +27,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $excel_id
  * @property array<string, mixed>|null $metadata
  * @property bool $is_active
+ * @property bool $must_change_password
  * @property Carbon|null $last_login_at
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -34,7 +36,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'is_active', 'must_change_password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -53,6 +55,7 @@ class User extends Authenticatable implements PasskeyUser
             'password' => 'hashed',
             'metadata' => 'array',
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
             'last_login_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
         ];
@@ -96,5 +99,16 @@ class User extends Authenticatable implements PasskeyUser
     public function trainingProgresses(): HasMany
     {
         return $this->hasMany(TrainingProgress::class);
+    }
+
+    /**
+     * Everyone who can review onboarding submissions — the audience for
+     * new-submission and roster-sync notifications.
+     *
+     * @return Collection<int, User>
+     */
+    public static function onboardingReviewers(): Collection
+    {
+        return static::permission('onboarding.review')->get();
     }
 }

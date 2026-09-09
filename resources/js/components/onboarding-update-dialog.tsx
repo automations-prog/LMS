@@ -428,6 +428,28 @@ export default function OnboardingUpdateDialog({
                                                         />
                                                     </div>
 
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="license-expires-at">
+                                                            Expires on (if
+                                                            verifying)
+                                                        </Label>
+                                                        <input
+                                                            id="license-expires-at"
+                                                            name="expires_at"
+                                                            type="date"
+                                                            defaultValue={
+                                                                submission.expires_at ??
+                                                                ''
+                                                            }
+                                                            className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                        />
+                                                        <InputError
+                                                            message={
+                                                                errors.expires_at
+                                                            }
+                                                        />
+                                                    </div>
+
                                                     <div className="grid grid-cols-3 gap-2">
                                                         {LICENSE_DECISION_OPTIONS.map(
                                                             ({
@@ -557,6 +579,28 @@ export default function OnboardingUpdateDialog({
                                                         <InputError
                                                             message={
                                                                 errors.note
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="ahip-expires-at">
+                                                            Expires on (if
+                                                            verifying)
+                                                        </Label>
+                                                        <input
+                                                            id="ahip-expires-at"
+                                                            name="expires_at"
+                                                            type="date"
+                                                            defaultValue={
+                                                                certification.expires_at ??
+                                                                ''
+                                                            }
+                                                            className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                        />
+                                                        <InputError
+                                                            message={
+                                                                errors.expires_at
                                                             }
                                                         />
                                                     </div>

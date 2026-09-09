@@ -58,6 +58,22 @@ test('a user cannot impersonate themselves', function () {
         ->assertForbidden();
 });
 
+test('an admin cannot impersonate an inactive agent (regression: it used to log the impersonator out instead)', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $inactiveAgent = User::factory()->create(['is_active' => false]);
+    $inactiveAgent->assignRole('agent');
+
+    $this->actingAs($admin)
+        ->post(route('users.impersonate', $inactiveAgent))
+        ->assertForbidden();
+
+    // The attempt must not have logged the admin's own session out or
+    // switched them into the target's (inactive) account.
+    $this->assertAuthenticatedAs($admin);
+});
+
 test('agent cannot impersonate anyone', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');

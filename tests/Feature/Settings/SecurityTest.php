@@ -86,6 +86,21 @@ test('password can be updated', function () {
     expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
 });
 
+test('updating your password clears the must-change-password flag', function () {
+    $user = User::factory()->create(['must_change_password' => true]);
+
+    $this->actingAs($user)
+        ->from(route('security.edit'))
+        ->put(route('user-password.update'), [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($user->refresh()->must_change_password)->toBeFalse();
+});
+
 test('correct password must be provided to update password', function () {
     $user = User::factory()->create();
 

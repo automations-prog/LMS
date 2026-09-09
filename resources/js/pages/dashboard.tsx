@@ -40,6 +40,13 @@ type StageStatusPoint = {
     rejected: number;
 };
 
+type FunnelPoint = {
+    key: string;
+    label: string;
+    count: number;
+    avg_days: number;
+};
+
 type Stats = {
     total_users: number;
     active_users: number;
@@ -53,6 +60,7 @@ type Charts = {
     signups_per_day: SignupPoint[];
     onboarding_stage_status: StageStatusPoint[];
     contracting_funnel: DataPoint[];
+    onboarding_funnel: FunnelPoint[];
 };
 
 type Props = {
@@ -104,6 +112,10 @@ const STAGE_STATUS_CHART_CONFIG = {
 
 const CONTRACTING_FUNNEL_CHART_CONFIG = {
     value: { label: 'Agents', color: 'var(--chart-2)' },
+} satisfies ChartConfig;
+
+const ONBOARDING_FUNNEL_CHART_CONFIG = {
+    count: { label: 'Agents', color: 'var(--chart-2)' },
 } satisfies ChartConfig;
 
 export default function Dashboard({ stats, charts }: Props) {
@@ -370,7 +382,11 @@ export default function Dashboard({ stats, charts }: Props) {
                                 margin={{ left: 8 }}
                             >
                                 <CartesianGrid horizontal={false} />
-                                <XAxis type="number" hide allowDecimals={false} />
+                                <XAxis
+                                    type="number"
+                                    hide
+                                    allowDecimals={false}
+                                />
                                 <YAxis
                                     dataKey="label"
                                     type="category"
@@ -390,6 +406,63 @@ export default function Dashboard({ stats, charts }: Props) {
                             </BarChart>
                         </ChartContainer>
                     </div>
+                </div>
+
+                <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
+                    <p className="text-sm font-medium">Onboarding funnel</p>
+                    <p className="mb-4 text-xs text-muted-foreground">
+                        Agents who&apos;ve reached each checkpoint, and the
+                        average days since they submitted eligibility.
+                    </p>
+                    <ChartContainer
+                        config={ONBOARDING_FUNNEL_CHART_CONFIG}
+                        className="aspect-auto h-64 w-full"
+                    >
+                        <BarChart
+                            accessibilityLayer
+                            data={charts.onboarding_funnel}
+                            layout="vertical"
+                            margin={{ left: 8 }}
+                        >
+                            <CartesianGrid horizontal={false} />
+                            <XAxis type="number" hide allowDecimals={false} />
+                            <YAxis
+                                dataKey="label"
+                                type="category"
+                                tickLine={false}
+                                axisLine={false}
+                                width={140}
+                            />
+                            <ChartTooltip
+                                cursor={false}
+                                content={
+                                    <ChartTooltipContent
+                                        hideLabel
+                                        formatter={(value, _name, item) => {
+                                            const point =
+                                                item.payload as unknown as FunnelPoint;
+
+                                            return (
+                                                <span>
+                                                    {String(value)} agent
+                                                    {point.count === 1
+                                                        ? ''
+                                                        : 's'}
+                                                    {point.avg_days > 0 &&
+                                                        ` · avg ${point.avg_days}d after submission`}
+                                                </span>
+                                            );
+                                        }}
+                                    />
+                                }
+                            />
+                            <Bar
+                                dataKey="count"
+                                fill="var(--color-count)"
+                                radius={4}
+                            />
+                        </BarChart>
+                    </ChartContainer>
                 </div>
 
                 <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">

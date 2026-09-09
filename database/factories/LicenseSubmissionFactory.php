@@ -38,4 +38,15 @@ class LicenseSubmissionFactory extends Factory
             'note' => fake()->sentence(),
         ]);
     }
+
+    /**
+     * Indicate that the license copy was verified, with an expiration date.
+     */
+    public function verified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => LicenseSubmission::STATUS_VERIFIED,
+            'expires_at' => now()->addYear(),
+        ]);
+    }
 }

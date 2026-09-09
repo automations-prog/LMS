@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAuditLogs;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $note
  * @property int|null $reviewed_by
  * @property Carbon|null $reviewed_at
+ * @property CarbonImmutable|null $expires_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -26,10 +29,11 @@ use Illuminate\Support\Carbon;
     'note',
     'reviewed_by',
     'reviewed_at',
+    'expires_at',
 ])]
 class AhipCertification extends Model
 {
-    use HasFactory;
+    use HasAuditLogs, HasFactory;
 
     public const STATUS_PENDING_REVIEW = 'pending_review';
 
@@ -44,6 +48,7 @@ class AhipCertification extends Model
     {
         return [
             'reviewed_at' => 'datetime',
+            'expires_at' => 'date',
         ];
     }
 

@@ -2,8 +2,10 @@
 
 use App\Models\User;
 use App\Notifications\AgentInviteNotification;
+use App\Notifications\RosterSyncCompletedNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
@@ -155,4 +157,36 @@ test('pagination links preserve empty-string filters (regression: ConvertEmptySt
             ->toContain('search=')
             ->toContain('page=2');
     });
+});
+
+test('clicking pull agents notifies the clicking admin with exactly how many were pulled', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    config([
+        'services.customer_api.domain' => 'https://api.test',
+        'services.customer_api.key' => 'test-key',
+        'services.customer_api.location_id' => '123',
+    ]);
+
+    Http::fake([
+        'api.test/*' => Http::response([
+            'pagedResults' => ['pageNumber' => 1, 'pageSize' => 50, 'pagesCount' => 1, 'resultsCount' => 1],
+            'students' => [
+                ['id' => 'ext-1', 'email' => 'pulled.agent@example.com', 'firstName' => 'Pulled', 'lastName' => 'Agent'],
+            ],
+        ]),
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('users.pull-agents'))
+        ->assertRedirect();
+
+    Notification::assertSentTo(
+        $admin,
+        RosterSyncCompletedNotification::class,
+        fn ($notification, $channels, $notifiable) => $notification->toArray($notifiable)['body'] === '1 new agent was invited.',
+    );
 });

@@ -3,6 +3,7 @@
 use App\Models\EligibilityAttestation;
 use App\Models\TrainingCompletion;
 use App\Models\User;
+use App\Notifications\NewSubmissionForReviewNotification;
 use App\Notifications\TrainingDecisionNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Http\UploadedFile;
@@ -32,6 +33,27 @@ test('an agent with no record can submit a certificate', function () {
 
     expect($completion->status)->toBe(TrainingCompletion::STATUS_PENDING_REVIEW);
     Storage::disk('local')->assertExists($completion->certificate_path);
+});
+
+test('submitting a certificate notifies every reviewer, but not other agents', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $otherAgent = User::factory()->create();
+    $otherAgent->assignRole('agent');
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    EligibilityAttestation::factory()->cleared()->for($agent)->create();
+
+    $this->actingAs($agent)
+        ->post(route('training.store'), ['certificate_file' => certificateFile()])
+        ->assertRedirect(route('dashboard'));
+
+    Notification::assertSentTo($admin, NewSubmissionForReviewNotification::class);
+    Notification::assertNotSentTo($otherAgent, NewSubmissionForReviewNotification::class);
 });
 
 test('an agent cannot submit before eligibility is cleared', function () {

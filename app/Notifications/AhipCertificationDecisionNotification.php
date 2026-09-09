@@ -25,7 +25,29 @@ class AhipCertificationDecisionNotification extends Notification implements Shou
      */
     public function via(User $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    /**
+     * Get the array representation of the notification, for the in-app
+     * notification bell.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(User $notifiable): array
+    {
+        $verified = $this->status === AhipCertification::STATUS_VERIFIED;
+
+        return [
+            'title' => $verified
+                ? __('Your AHIP certification has been verified')
+                : __('Your AHIP certification needs attention'),
+            'body' => $verified
+                ? __('Your AHIP/FWA certification has been reviewed and verified.')
+                : ($this->note ?: __('Your uploaded AHIP completion certificate could not be verified. Please upload a new one.')),
+            'level' => $verified ? 'success' : 'error',
+            'action_url' => route('dashboard'),
+        ];
     }
 
     /**

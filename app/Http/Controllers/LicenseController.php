@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreLicenseSubmissionRequest;
 use App\Models\LicenseSubmission;
+use App\Models\User;
+use App\Notifications\NewSubmissionForReviewNotification;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -35,6 +38,8 @@ class LicenseController extends Controller
                 'reviewed_at' => null,
             ],
         );
+
+        Notification::send(User::onboardingReviewers(), new NewSubmissionForReviewNotification($user, 'license copy'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('License copy submitted.')]);
 

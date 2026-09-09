@@ -16,11 +16,13 @@ class TrainingCompletionPolicy
     }
 
     /**
-     * Determine whether the user can view the given training completion.
+     * Determine whether the user can view the given training completion —
+     * either a reviewer, or the agent it belongs to viewing their own
+     * certificate.
      */
     public function view(User $user, TrainingCompletion $trainingCompletion): bool
     {
-        return $user->can('onboarding.review');
+        return $user->can('onboarding.review') || $user->id === $trainingCompletion->user_id;
     }
 
     /**

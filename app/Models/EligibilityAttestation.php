@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAuditLogs;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -59,7 +60,7 @@ use Illuminate\Support\Carbon;
 ])]
 class EligibilityAttestation extends Model
 {
-    use HasFactory;
+    use HasAuditLogs, HasFactory;
 
     public const STATUS_PENDING = 'pending';
 

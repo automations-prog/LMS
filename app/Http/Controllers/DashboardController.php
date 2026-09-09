@@ -182,8 +182,69 @@ class DashboardController extends Controller
                 'signups_per_day' => $signupsPerDay,
                 'onboarding_stage_status' => $onboardingStageStatus,
                 'contracting_funnel' => $contractingFunnel,
+                'onboarding_funnel' => $this->onboardingFunnel(),
             ],
         ]);
+    }
+
+    /**
+     * How many agents have reached each checkpoint in the onboarding
+     * sequence, and on average how many days after submitting their
+     * eligibility attestation they got there. Walks the required chain
+     * only (submission through contracting complete) — `carrier_certs` is
+     * an optional side branch per ContractingStages::DEPENDENCIES, not a
+     * step everyone passes through, so it's left out of this funnel.
+     *
+     * Computed in PHP rather than a database-side date diff so it behaves
+     * the same on sqlite (tests) and whatever the app runs in production.
+     *
+     * @return array<int, array{key: string, label: string, count: int, avg_days: float}>
+     */
+    private function onboardingFunnel(): array
+    {
+        $stages = [
+            ['key' => 'submitted', 'label' => 'Submitted', 'column' => null],
+            ['key' => 'enrollment', 'label' => 'Enrollment', 'column' => 'enrollment_completed_at'],
+            ['key' => 'exam_scheduled', 'label' => 'Exam Scheduled', 'column' => 'exam_scheduled_at'],
+            ['key' => 'fingerprinting', 'label' => 'Fingerprinting', 'column' => 'fingerprinting_completed_at'],
+            ['key' => 'license_application', 'label' => 'License Application', 'column' => 'license_application_submitted_at'],
+            ['key' => 'contracting_confirmed', 'label' => 'Contracting Confirmed', 'column' => 'contracting_confirmed_at'],
+            ['key' => 'contracting_forwarded', 'label' => 'Forwarded', 'column' => 'contracting_forwarded_at'],
+            ['key' => 'contracting_issued', 'label' => 'Issued', 'column' => 'contracting_issued_at'],
+            ['key' => 'contracting_complete', 'label' => 'Complete', 'column' => 'contracting_complete_at'],
+        ];
+
+        $columns = collect($stages)->pluck('column')->filter()->values()->all();
+
+        $attestations = EligibilityAttestation::query()
+            ->select(['id', 'created_at', ...$columns])
+            ->get();
+
+        return collect($stages)
+            ->map(function (array $stage) use ($attestations) {
+                if ($stage['column'] === null) {
+                    return [
+                        'key' => $stage['key'],
+                        'label' => $stage['label'],
+                        'count' => $attestations->count(),
+                        'avg_days' => 0.0,
+                    ];
+                }
+
+                $reached = $attestations->filter(fn ($row) => $row->{$stage['column']} !== null);
+
+                return [
+                    'key' => $stage['key'],
+                    'label' => $stage['label'],
+                    'count' => $reached->count(),
+                    'avg_days' => $reached->isEmpty() ? 0.0 : round(
+                        $reached->avg(fn ($row) => $row->created_at->diffInDays($row->{$stage['column']})),
+                        1,
+                    ),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /**
@@ -211,8 +272,10 @@ class DashboardController extends Controller
             'licenseApplicationSubmitted' => $attestation?->license_application_submitted_at !== null,
             'licenseStatus' => $license?->status,
             'licenseNote' => $license?->status === LicenseSubmission::STATUS_REJECTED ? $license->note : null,
+            'licenseExpiresAt' => $license?->expires_at?->toDateString(),
             'ahipStatus' => $ahip?->status,
             'ahipNote' => $ahip?->status === AhipCertification::STATUS_REJECTED ? $ahip->note : null,
+            'ahipExpiresAt' => $ahip?->expires_at?->toDateString(),
             'contracting' => $ahip?->status === AhipCertification::STATUS_VERIFIED ? [
                 'confirmed' => $attestation?->contracting_confirmed_at !== null,
                 'forwarded' => $attestation?->contracting_forwarded_at !== null,

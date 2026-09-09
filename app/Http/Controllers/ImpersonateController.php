@@ -22,6 +22,13 @@ class ImpersonateController extends Controller
         // the policy's self-impersonation guard for them — enforce it here too.
         abort_if($request->user()->id === $user->id, 403, __('You cannot impersonate yourself.'));
 
+        // Same reasoning: an inactive account gets force-logged-out by
+        // EnsureAccountIsActive on its very next request, which would bounce
+        // the impersonator straight to the login page. Enforced again here
+        // (not just in the policy) so super-admins — who bypass the policy
+        // via Gate::before — get the same clear error instead of that.
+        abort_unless($user->is_active, 403, __('You cannot impersonate an inactive or suspended account.'));
+
         Gate::authorize('impersonate', $user);
 
         $request->session()->put('impersonator_id', $request->user()->id);
