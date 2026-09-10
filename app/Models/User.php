@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -27,6 +28,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $excel_id
  * @property array<string, mixed>|null $metadata
  * @property string|null $source
+ * @property Carbon|null $roleplay_enabled_at
+ * @property int|null $roleplay_enabled_by
  * @property bool $is_active
  * @property bool $must_change_password
  * @property Carbon|null $last_login_at
@@ -37,7 +40,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'source', 'is_active', 'must_change_password'])]
+#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'source', 'is_active', 'must_change_password', 'roleplay_enabled_at', 'roleplay_enabled_by'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -71,7 +74,17 @@ class User extends Authenticatable implements PasskeyUser
             'must_change_password' => 'boolean',
             'last_login_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
+            'roleplay_enabled_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Whether an admin has granted this user access to the sales roleplay
+     * feature.
+     */
+    public function hasRoleplayAccess(): bool
+    {
+        return $this->roleplay_enabled_at !== null;
     }
 
     /**
@@ -112,6 +125,24 @@ class User extends Authenticatable implements PasskeyUser
     public function trainingProgresses(): HasMany
     {
         return $this->hasMany(TrainingProgress::class);
+    }
+
+    /**
+     * @return HasMany<RoleplaySession, $this>
+     */
+    public function roleplaySessions(): HasMany
+    {
+        return $this->hasMany(RoleplaySession::class);
+    }
+
+    /**
+     * The admin/super-admin who granted this user roleplay access.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function roleplayEnabledBy(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'roleplay_enabled_by');
     }
 
     /**

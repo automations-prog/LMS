@@ -21,3 +21,4 @@ require __DIR__.'/ahip-certification.php';
 require __DIR__.'/onboarding.php';
 require __DIR__.'/agents.php';
 require __DIR__.'/roles.php';
+require __DIR__.'/roleplay.php';

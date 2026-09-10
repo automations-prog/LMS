@@ -43,6 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'onboarding.review',
             'agents.view',
             'roles.manage',
+            'roleplay.manage',
         ];
 
         foreach ($permissions as $permission) {
@@ -69,6 +70,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.impersonate',
             'onboarding.review',
             'agents.view',
+            'roleplay.manage',
         ]);
 
         $agent = Role::findOrCreate('agent');

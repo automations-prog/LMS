@@ -50,4 +50,18 @@ return [
         'pitchperfect_table_id' => env('AIRTABLE_PITCHPERFECT_TABLE_ID'),
     ],
 
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        // gpt-realtime family model used for the live voice roleplay call.
+        'realtime_model' => env('OPENAI_REALTIME_MODEL', 'gpt-realtime'),
+        'realtime_voice' => env('OPENAI_REALTIME_VOICE', 'marin'),
+        // Model used to transcribe the agent's side of the call — the
+        // model's own spoken side is transcribed separately by the
+        // realtime model itself.
+        'transcribe_model' => env('OPENAI_TRANSCRIBE_MODEL', 'gpt-4o-mini-transcribe'),
+        // Cheaper text model used to grade the finished transcript against
+        // the rebuttal rubric — no audio involved at this step.
+        'scoring_model' => env('OPENAI_SCORING_MODEL', 'gpt-4.1-mini'),
+    ],
+
 ];

@@ -3,6 +3,7 @@ import {
     BadgeCheck,
     LayoutGrid,
     Lock,
+    Mic,
     ShieldCheck,
     Users,
 } from 'lucide-react';
@@ -21,6 +22,8 @@ import {
 import { dashboard } from '@/routes';
 import { index as agentsIndex } from '@/routes/agents';
 import { index as onboardingIndex } from '@/routes/onboarding';
+import { index as roleplayIndex } from '@/routes/roleplay';
+import { index as roleplayAccessIndex } from '@/routes/roleplay/access';
 import { index as rolesIndex } from '@/routes/roles';
 import { index as usersIndex } from '@/routes/users';
 import type { Auth, NavItem } from '@/types';
@@ -35,6 +38,20 @@ export function AppSidebar() {
             href: dashboard(),
             icon: LayoutGrid,
         },
+        {
+            title: 'Sales Roleplay',
+            href: roleplayIndex(),
+            icon: Mic,
+        },
+        ...(permissions.includes('roleplay.manage')
+            ? [
+                  {
+                      title: 'Roleplay Coaching',
+                      href: roleplayAccessIndex(),
+                      icon: Mic,
+                  },
+              ]
+            : []),
         ...(permissions.includes('onboarding.review')
             ? [
                   {
