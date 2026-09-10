@@ -41,4 +41,13 @@ return [
         'location_id' => env('CUSTOMER_API_LOCATION_ID'),
     ],
 
+    'airtable' => [
+        'token' => env('AIRTABLE_API_TOKEN'),
+        'pitch_health_base_id' => env('AIRTABLE_PITCH_HEALTH_BASE_ID'),
+        'pitch_health_table_id' => env('AIRTABLE_PITCH_HEALTH_TABLE_ID'),
+        'pitchperfect_token' => env('AIRTABLE_PITCHPERFECT_TOKEN'),
+        'pitchperfect_base_id' => env('AIRTABLE_PITCHPERFECT_BASE_ID'),
+        'pitchperfect_table_id' => env('AIRTABLE_PITCHPERFECT_TABLE_ID'),
+    ],
+
 ];

@@ -25,6 +25,13 @@ class OnboardingReviewController extends Controller
 
         $agents = User::query()
             ->role('agent')
+            // A Pitch Health agent isn't reviewable until they're linked to
+            // an XCEL record (LinkPitchHealthUsersToXcelJob) — every other
+            // source shows regardless.
+            ->where(fn ($query) => $query
+                ->where('source', '!=', User::SOURCE_PITCH_HEALTH)
+                ->orWhereNull('source')
+                ->orWhereNotNull('excel_id'))
             ->with([
                 'eligibilityAttestation.reviewer',
                 'trainingCompletion.reviewer',
@@ -74,6 +81,9 @@ class OnboardingReviewController extends Controller
     {
         abort_unless($request->user()->can('onboarding.review'), 403);
         abort_unless($user->hasRole('agent'), 404);
+        // Same visibility rule as the index: an unlinked Pitch Health agent
+        // isn't reviewable yet, even via a direct link.
+        abort_if($user->source === User::SOURCE_PITCH_HEALTH && ! $user->excel_id, 404);
 
         $user->load([
             'eligibilityAttestation.reviewer',

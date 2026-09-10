@@ -298,7 +298,7 @@ export default function Dashboard({ stats, charts }: Props) {
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
                         <p className="mb-4 text-sm font-medium">
-                            Onboarding review status by stage
+                            License Agents Onboarding review status by stage
                         </p>
                         <ChartContainer
                             config={STAGE_STATUS_CHART_CONFIG}
@@ -409,7 +409,7 @@ export default function Dashboard({ stats, charts }: Props) {
                 </div>
 
                 <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-                    <p className="text-sm font-medium">Onboarding funnel</p>
+                    <p className="text-sm font-medium">License Agents Onboarding funnel</p>
                     <p className="mb-4 text-xs text-muted-foreground">
                         Agents who&apos;ve reached each checkpoint, and the
                         average days since they submitted eligibility.

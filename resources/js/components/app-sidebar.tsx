@@ -38,7 +38,7 @@ export function AppSidebar() {
         ...(permissions.includes('onboarding.review')
             ? [
                   {
-                      title: 'Onboarding',
+                      title: 'License Agents Onboarding',
                       href: onboardingIndex(),
                       icon: ShieldCheck,
                   },

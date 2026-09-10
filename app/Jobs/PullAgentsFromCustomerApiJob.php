@@ -18,6 +18,13 @@ class PullAgentsFromCustomerApiJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
+     * A full roster pull pages through every student one HTTP request at a
+     * time, which can comfortably outrun the queue worker's default 60s
+     * kill-timeout on a large roster.
+     */
+    public int $timeout = 300;
+
+    /**
      * @param  User|null  $triggeredBy  The admin who clicked "Pull agents",
      *                                  or null when the nightly schedule ran
      *                                  this instead of a person.
@@ -76,6 +83,7 @@ class PullAgentsFromCustomerApiJob implements ShouldQueue
                 'must_change_password' => true,
                 'excel_id' => $student['id'] ?? null,
                 'metadata' => collect($student)->except(['id', 'email'])->all(),
+                'source' => User::SOURCE_CUSTOMER_API,
             ]);
 
             $user->syncRoles(['agent']);

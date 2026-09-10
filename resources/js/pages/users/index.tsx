@@ -1,10 +1,11 @@
-import { Form, Head, router, usePage } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Ban,
     Check,
     CircleCheck,
     Copy,
     Download,
+    Eye,
     MoreHorizontal,
     Pencil,
     Plus,
@@ -61,21 +62,15 @@ import {
 } from '@/components/ui/tooltip';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { brandButtonClass } from '@/lib/brand-theme';
-import { index } from '@/routes/users';
+import {
+    formatLastLogin,
+    formatSource,
+    ROLE_BADGE_CLASSES,
+    ROLE_LABELS,
+    SOURCE_LABELS,
+} from '@/lib/user-display';
+import { index, show } from '@/routes/users';
 import type { Auth, Paginator } from '@/types';
-
-const ROLE_LABELS: Record<string, string> = {
-    agent: 'Agent',
-    admin: 'Admin',
-    'super-admin': 'Super Admin',
-};
-
-const ROLE_BADGE_CLASSES: Record<string, string> = {
-    agent: 'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-    admin: 'border-transparent bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-    'super-admin':
-        'border-transparent bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
-};
 
 const ALL_ROLES = ['agent', 'admin', 'super-admin'];
 
@@ -85,17 +80,14 @@ type UserRow = {
     email: string;
     is_active: boolean;
     last_login_at: string | null;
+    source: string | null;
     roles: { id: number; name: string }[];
 };
 
-const lastLoginFormatter = new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-});
-
-function formatLastLogin(value: string | null) {
-    return value ? lastLoginFormatter.format(new Date(value)) : 'Never';
-}
+// Filterable in the dropdown below — 'manual' and 'customer_api' are still
+// shown as labels in the table (via SOURCE_LABELS), just not offered as a
+// filter option.
+const ALL_SOURCES = ['pitch_health', 'pitch_perfect'];
 
 type Counts = {
     total: number;
@@ -107,6 +99,7 @@ type Counts = {
 type Filters = {
     search: string;
     role: string;
+    source: string;
     per_page: number;
 };
 
@@ -187,7 +180,8 @@ export default function UsersIndex({
 
     const [createOpen, setCreateOpen] = useState(false);
     const [createRole, setCreateRole] = useState(assignableRoles[0]);
-    const [pullAgentsOpen, setPullAgentsOpen] = useState(false);
+    const [pullPitchHealthOpen, setPullPitchHealthOpen] = useState(false);
+    const [pullPitchPerfectOpen, setPullPitchPerfectOpen] = useState(false);
     const [editingUserId, setEditingUserId] = useState<number | null>(null);
     const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
     const [suspendingUserId, setSuspendingUserId] = useState<number | null>(
@@ -267,10 +261,18 @@ export default function UsersIndex({
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="secondary"
-                                onClick={() => setPullAgentsOpen(true)}
+                                onClick={() => setPullPitchHealthOpen(true)}
                             >
                                 <Download className="size-4" />
-                                Pull New Agents
+                                Pull Pitch Health
+                            </Button>
+
+                            <Button
+                                variant="secondary"
+                                onClick={() => setPullPitchPerfectOpen(true)}
+                            >
+                                <Download className="size-4" />
+                                Pull PitchPerfect
                             </Button>
 
                             <Sheet
@@ -463,6 +465,28 @@ export default function UsersIndex({
                             ))}
                         </SelectContent>
                     </Select>
+
+                    <Select
+                        value={filters.source === '' ? 'all' : filters.source}
+                        onValueChange={(value) =>
+                            applyFilters(
+                                { source: value === 'all' ? '' : value },
+                                filters,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-40">
+                            <SelectValue placeholder="All sources" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All sources</SelectItem>
+                            {ALL_SOURCES.map((source) => (
+                                <SelectItem key={source} value={source}>
+                                    {SOURCE_LABELS[source] ?? source}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {selectedIds.length > 0 && (
@@ -492,18 +516,22 @@ export default function UsersIndex({
                     </div>
                 )}
 
-                <Dialog open={pullAgentsOpen} onOpenChange={setPullAgentsOpen}>
+                <Dialog
+                    open={pullPitchHealthOpen}
+                    onOpenChange={setPullPitchHealthOpen}
+                >
                     <DialogContent>
-                        <DialogTitle>Pull new agents?</DialogTitle>
+                        <DialogTitle>Pull Pitch Health data?</DialogTitle>
                         <p className="text-sm text-muted-foreground">
-                            This will fetch the latest agents from the training
-                            provider and create an account for each one not
-                            already registered. Existing emails are skipped.
+                            This will fetch the latest Pitch Health
+                            submissions from Airtable, save them, and create
+                            an active account with the default password for
+                            each submitted email not already registered.
                         </p>
 
                         <Form
-                            {...UserController.pullAgents.form()}
-                            onSuccess={() => setPullAgentsOpen(false)}
+                            {...UserController.pullPitchHealth.form()}
+                            onSuccess={() => setPullPitchHealthOpen(false)}
                         >
                             {({ processing }) => (
                                 <DialogFooter className="gap-2">
@@ -514,7 +542,42 @@ export default function UsersIndex({
                                     </DialogClose>
                                     <Button type="submit" disabled={processing}>
                                         {processing && <Spinner />}
-                                        Pull agents
+                                        Pull Pitch Health
+                                    </Button>
+                                </DialogFooter>
+                            )}
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog
+                    open={pullPitchPerfectOpen}
+                    onOpenChange={setPullPitchPerfectOpen}
+                >
+                    <DialogContent>
+                        <DialogTitle>Pull PitchPerfect data?</DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                            This will fetch the latest PitchPerfect
+                            submissions from Airtable, save them, and create
+                            an active account with the default password for
+                            each submitted email marked Active that isn't
+                            already registered.
+                        </p>
+
+                        <Form
+                            {...UserController.pullPitchPerfect.form()}
+                            onSuccess={() => setPullPitchPerfectOpen(false)}
+                        >
+                            {({ processing }) => (
+                                <DialogFooter className="gap-2">
+                                    <DialogClose asChild>
+                                        <Button variant="secondary">
+                                            Cancel
+                                        </Button>
+                                    </DialogClose>
+                                    <Button type="submit" disabled={processing}>
+                                        {processing && <Spinner />}
+                                        Pull PitchPerfect
                                     </Button>
                                 </DialogFooter>
                             )}
@@ -639,6 +702,9 @@ export default function UsersIndex({
                                     Status
                                 </th>
                                 <th className="px-4 py-3 font-medium">
+                                    Source
+                                </th>
+                                <th className="px-4 py-3 font-medium">
                                     Last login
                                 </th>
                                 <th className="px-4 py-3 font-medium">
@@ -685,7 +751,16 @@ export default function UsersIndex({
                                             />
                                         </td>
                                         <td className="px-4 py-3">
-                                            {user.name}
+                                            {canEdit ? (
+                                                <Link
+                                                    href={show(user.id)}
+                                                    className="hover:underline"
+                                                >
+                                                    {user.name}
+                                                </Link>
+                                            ) : (
+                                                user.name
+                                            )}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             <div className="flex items-center gap-1.5">
@@ -752,6 +827,9 @@ export default function UsersIndex({
                                             </Badge>
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
+                                            {formatSource(user.source)}
+                                        </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
                                             {formatLastLogin(
                                                 user.last_login_at,
                                             )}
@@ -771,6 +849,20 @@ export default function UsersIndex({
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
+                                                    {canEdit && (
+                                                        <DropdownMenuItem
+                                                            asChild
+                                                        >
+                                                            <Link
+                                                                href={show(
+                                                                    user.id,
+                                                                )}
+                                                            >
+                                                                <Eye />
+                                                                View
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                    )}
                                                     {canImpersonateUser && (
                                                         <DropdownMenuItem
                                                             onSelect={() =>
@@ -1102,7 +1194,7 @@ export default function UsersIndex({
                             {users.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={7}
+                                        colSpan={8}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
                                         No users found.
@@ -1115,7 +1207,11 @@ export default function UsersIndex({
 
                 <DataPagination
                     paginator={users}
-                    filters={{ search: filters.search, role: filters.role }}
+                    filters={{
+                        search: filters.search,
+                        role: filters.role,
+                        source: filters.source,
+                    }}
                 />
             </div>
         </>

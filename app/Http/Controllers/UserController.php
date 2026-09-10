@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Jobs\PullAgentsFromCustomerApiJob;
+use App\Jobs\PullPitchHealthFromAirtableJob;
+use App\Jobs\PullPitchPerfectFromAirtableJob;
 use App\Models\User;
 use App\Notifications\AgentInviteNotification;
 use App\Policies\UserPolicy;
@@ -27,14 +29,23 @@ class UserController extends Controller
 
         $search = $request->string('search')->trim()->toString();
         $role = $request->string('role')->trim()->toString();
+        $source = $request->string('source')->trim()->toString();
 
-        $users = User::query()
-            ->with('roles')
+        // Shared by the listing query and the count cards so the cards
+        // reflect the same search/source filters as the table below them.
+        // Role is intentionally excluded: each card counts users of that
+        // role within the current search/source scope, so switching roles
+        // doesn't also zero out the other cards.
+        $baseQuery = fn () => User::query()
             ->when($search !== '', fn ($query) => $query->where(
                 fn ($query) => $query
                     ->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%"),
             ))
+            ->when($source !== '', fn ($query) => $query->where('source', $source));
+
+        $users = $baseQuery()
+            ->with('roles')
             ->when($role !== '', fn ($query) => $query->role($role))
             ->orderBy('name')
             ->paginate($perPage)
@@ -47,6 +58,7 @@ class UserController extends Controller
             ->appends([
                 'search' => $search,
                 'role' => $role,
+                'source' => $source,
                 'per_page' => $perPage,
             ]);
 
@@ -56,14 +68,42 @@ class UserController extends Controller
             'filters' => [
                 'search' => $search,
                 'role' => $role,
+                'source' => $source,
                 'per_page' => $perPage,
             ],
             'counts' => [
-                'total' => User::count(),
-                'agent' => User::role('agent')->count(),
-                'admin' => User::role('admin')->count(),
-                'super-admin' => User::role('super-admin')->count(),
+                'total' => $baseQuery()->count(),
+                'agent' => $baseQuery()->role('agent')->count(),
+                'admin' => $baseQuery()->role('admin')->count(),
+                'super-admin' => $baseQuery()->role('super-admin')->count(),
             ],
+        ]);
+    }
+
+    /**
+     * Show a single user's account details.
+     */
+    public function show(Request $request, User $user): Response
+    {
+        Gate::authorize('view', $user);
+
+        $user->load('roles.permissions');
+
+        // The onboarding workflow (eligibility, training, license, AHIP)
+        // already has its own dedicated review page — surface just enough
+        // here to link over to it, not duplicate it.
+        if ($user->hasRole('agent')) {
+            $user->load([
+                'eligibilityAttestation',
+                'trainingCompletion',
+                'licenseSubmission',
+                'ahipCertification',
+            ]);
+        }
+
+        return Inertia::render('users/show', [
+            'targetUser' => $user,
+            'canEdit' => $request->user()->can('update', $user),
         ]);
     }
 
@@ -84,6 +124,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => $isInvited ? 'password' : $validated['password'],
             'is_active' => ! $isInvited,
+            'source' => User::SOURCE_MANUAL,
         ]);
 
         $user->syncRoles([$validated['role']]);
@@ -184,6 +225,44 @@ class UserController extends Controller
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => __('Pull started. New agents will appear shortly.'),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Pull the latest Pitch Health submissions from Airtable, save them,
+     * and create an agent account for each submitted email that isn't
+     * already registered.
+     */
+    public function pullPitchHealth(Request $request): RedirectResponse
+    {
+        Gate::authorize('create', User::class);
+
+        PullPitchHealthFromAirtableJob::dispatch($request->user());
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Pull started. Pitch Health data will update shortly.'),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Pull the latest PitchPerfect submissions from Airtable, save them,
+     * and create an agent account for each submitted email whose Status is
+     * Active and isn't already registered.
+     */
+    public function pullPitchPerfect(Request $request): RedirectResponse
+    {
+        Gate::authorize('create', User::class);
+
+        PullPitchPerfectFromAirtableJob::dispatch($request->user());
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Pull started. PitchPerfect data will update shortly.'),
         ]);
 
         return back();

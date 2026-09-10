@@ -48,6 +48,45 @@ test('the onboarding list shows every agent with both statuses, by default unfil
         ->has('agents.data', 2));
 });
 
+test('a Pitch Health agent without a linked XCEL record is hidden from the onboarding list and its show page', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $unlinked = User::factory()->create(['source' => User::SOURCE_PITCH_HEALTH, 'excel_id' => null]);
+    $unlinked->assignRole('agent');
+
+    $linked = User::factory()->create(['source' => User::SOURCE_PITCH_HEALTH, 'excel_id' => 'xcel-1']);
+    $linked->assignRole('agent');
+
+    $response = $this->actingAs($admin)
+        ->get(route('onboarding.index'))
+        ->assertOk();
+
+    $response->assertInertia(fn ($page) => $page
+        ->component('admin/onboarding/index')
+        ->has('agents.data', 1)
+        ->where('agents.data.0.id', $linked->id));
+
+    $this->actingAs($admin)->get(route('onboarding.show', $unlinked))->assertNotFound();
+    $this->actingAs($admin)->get(route('onboarding.show', $linked))->assertOk();
+});
+
+test('a non-Pitch-Health agent without an XCEL record still shows in the onboarding list', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $manual = User::factory()->create(['source' => User::SOURCE_MANUAL, 'excel_id' => null]);
+    $manual->assignRole('agent');
+
+    $response = $this->actingAs($admin)
+        ->get(route('onboarding.index'))
+        ->assertOk();
+
+    $response->assertInertia(fn ($page) => $page
+        ->component('admin/onboarding/index')
+        ->has('agents.data', 1));
+});
+
 test('the onboarding list is sorted by newest agent first', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');

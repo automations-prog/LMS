@@ -1,0 +1,227 @@
+{
+    "records": [
+        {
+            "id": "rec8AYUqVxxn8Tldc",
+            "createdTime": "2026-09-03T21:33:00.000Z",
+            "fields": {
+                "Resident State": "Michigan - MI",
+                "Personal email": "dmcskimming@comcast.net",
+                "SSN": 372881372,
+                "NPN": 8289122,
+                "Full Name": "Andrew McSkimming",
+                "Discord SMS": "Sent",
+                "States you're licensed in:": [
+                    "Michigan - MI"
+                ],
+                "Added to Company Directory?": "Added",
+                "Email": "dmcskimming@comcast.net",
+                "Bank Details": "072000326-Routing\n033484555-Account",
+                "Phone Number": "(313) 418-4646",
+                "Full Mailing Address": "2073 Lancaster, Grosse Pointe Woods, MI 48236",
+                "Submitted At": "2026-09-03T21:33:00.000Z",
+                "Upload your a screenshot of your internet speed. Go to speedtest.net": [
+                    {
+                        "id": "attO3W8nu2IsWbMf8",
+                        "width": 1358,
+                        "height": 628,
+                        "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/ijZOvqdfrmsrdAEGJ_B7DA/O38Ydwwj-dbibKfSM0cO6sPOYaKzIXCmQ_zzC8gMp0Y28SInXIkF05cDJmagzIujejYuCnPTH6OOfCav9GROhPDYWqUQyKnGxWII3O-Rcs9xfOWbICHW9G4nLvcEifhqxyIsDCxCgqkPDmoGMFGVswHsgkPaZw7L77GSkuODdsyoNq-EolvpN3p_N-vAL3Yq/i-r-LFF3fW4fCJsLLGULSseDd1OYzTttuKxj3H2gC7I",
+                        "filename": "screenshot-1788470943534.png",
+                        "size": 442877,
+                        "type": "image/png",
+                        "thumbnails": {
+                            "small": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/n9Bl_6FmwBhS1uvnerQJZQ/OliMBDExLhq0BQav5xvE0HyhU5RSurYkplxKcToDliNOBXW_dS7_UqGj057qFAjjh6dIVq-s8hiZA3Pdln12SIDRYfbWjxmGx028SFM1pYZh08YyV0NXFxwu_LGunJPNc4JK5a1wtbAFyp21LCO40g/epXhqTCpQoF-wNE6Sh19uqla14ZApxgdP2wg_JNgJKc",
+                                "width": 78,
+                                "height": 36
+                            },
+                            "large": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/MplsXzvN11pjXezT4Am3HQ/if9R2c-95ixy4uxO3YnSoK3La4BO-xzkM9sM0e-SFVSancaItwG6l8r4XAChEnqjvUZ3aTh-s5GcekiLdKnEHxfFTPrsaIxiZlD8MXTTfjY4r3XCHLWfyFzpdMEDU-B1pwB4DSdRQz-q4KAe-0ufpQ/7JAXSIjjvhBX6X4nQ0GsFyZSPcIyWar93Xb2_1rdlRI",
+                                "width": 1107,
+                                "height": 512
+                            },
+                            "full": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/Juq4cI5Cy0s3ghYqrsLqRQ/9IVUgX1sSAVJn1oEF5rDSpM5MMhkwMGDI05dlkpoaFE6OCPo6QIGRbeBjaUdiPkSWjcXnW3MI9zKIGQthQ3OfzM8bz2ExnU8zv2r1XX2YU4lsO8HzQUtMBfajAKXS1cJ5ol9_9N-a5rhhmgFjDuGjQ/VvfaUO5gVHG8WZTupTRX0rlay9zNcfHz2z6ly5pLmjY",
+                                "width": 1358,
+                                "height": 628
+                            }
+                        }
+                    }
+                ],
+                "First Step": "Done",
+                "First Name": "Andrew",
+                "Photo ID": [
+                    {
+                        "id": "attfH3kRzoYJ6QToh",
+                        "width": 3024,
+                        "height": 4032,
+                        "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/tZDs7qO_Eu7usgrOSpF6Gw/nDkhGQ-ugSCEzt3ycj6FTnHWouV2iwuIw0vA5OQUQ-H47VZq9lNm7ju9Dt4Izgp71DMIuJqtzy1UNDwU8ZgZwsCN3H0zvnSzPzy1igSVY3CTszyBXSZKUZ3W18H1PtmudvCnnws5jpWREwNc0_FoNw/qFSkuE56FlpPfUwboTWaFTII28uHGALSHp04MKRXQf8",
+                        "filename": "AM DL.jpg",
+                        "size": 1686384,
+                        "type": "image/jpeg",
+                        "thumbnails": {
+                            "small": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/1HC5vsnERSlfoKjpNuCaIw/eGDD9q3FgdPF48mAvWNbFMvoDFfV5qOBpeGa1SZc-I1aXiGMg_iWHz-bd-_IacF6iis7N-GiWug8Zn0EVUTf-s_fCny-LnVxSe9hsTKYXz4KZbsY_SfSyR2Xz-7SKR8aUvbByaWawgYy--grAjVm2g/9JpxqtzameP1Cts2CRUD7yIYaW32KNbH1bR5P13Y1Lg",
+                                "width": 27,
+                                "height": 36
+                            },
+                            "large": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/U6VVMAAzs6OnoNj4rt5iAw/27feZ-7g3XqJdDg6EE36DtCXgkbTMwuWYNzXL7F2AmOevO3PDXDSKHwIEy0V6iBDwNaUcaXOSI4VALjyvQAXQHWM7iE4JuJGE2iRXnj1pvmgVw4-VBH6UYTilb7Q-97mFCoaL336D578L9BXk9kE0g/rip-8djLlX0HBvJzlVnFdv7MJT2wKiEHxCAyKgd3VzY",
+                                "width": 512,
+                                "height": 683
+                            },
+                            "full": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/aaWD6d8HtxiKKTKx-zJ0fQ/DC-Q5jY-1u4B8C95Tj9tCx1mY9cT9VoBadJJVOeM6zI-8h0L18pN-QohkvSdda86EIuZaFCtNnyHpGoFA0EXaY9ILeEmho0aYfhDSYdUxMwwRgL_aXrEjmkEPJZHq-jlglWT3HXgLTgTopms3Imz0Q/HpI19pDy22kRWP2CJajDRk4QS8hnKkiIOdILCaS_Xig",
+                                "width": 2250,
+                                "height": 3000
+                            }
+                        }
+                    }
+                ],
+                "Date of Birth": "1968-05-17",
+                "Are you new to Medicare?": "Yes",
+                "Screenshot of your Social Security Card": [
+                    {
+                        "id": "att2b9ZSKc6YzyELf",
+                        "width": 3024,
+                        "height": 4032,
+                        "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/UMg-sNKVndsmAy1U-bux9w/aEMY1pyzjofiakC-Wwu9Dd_1VOmkQPw7JNtDc-yYX30TxFIPCarAOsuGjBqLAkFnUk7wJYbAtB1bbfPU6eLa6B5ocWlergIvU63iaEqLD8gBtWZ1Fk_og6oNoNNAEXH_l88TADPSLl8GuAu8MaRAPSP2w-uFb5TqBBnFNtQtqTI/UmWKRLsIUvoKro2bC5VSxsfwlU0ERmf4D7qB3qZvxvo",
+                        "filename": "AM SS Card.jpg",
+                        "size": 1470470,
+                        "type": "image/jpeg",
+                        "thumbnails": {
+                            "small": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/VRnakjXqJt4qYxbURyP-QA/OWnM5I_FELPPJA4VMNm_C3kBwX5YwF-bQeLVs5KX-LT-SYqUemy-9zJV-9YYImkWlXWj4Y-P-1cgJMjtaCn1kpbqyg5tU1useS_7txtmrWMvWG9NYTFAIv6iiCtPYKcgkBaBu6xqkMHjNw0yG0QqEw/DL7sfB6Zq2ZYiXAPoUYl6N3cI8-Q9VPIt4i4emWgLsU",
+                                "width": 27,
+                                "height": 36
+                            },
+                            "large": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/3DXxQ9U8YBI9bnIcrlhjwg/ZJEECBk4UKyKJAWZ0leWxuF4QvsQkOLJRd8n9xjVqznmQRZtgHpa82XS7BIqFWfSm64xaFvSWMZTE-v6Biz4WwXBJSq-Fc8EfGmkLJHb-1JyK6w5Gk9n5yH3-Ffq-i8qOkMZjjqd_c-eCQIve08BgA/SVDIKH4l2c9x7KzndAHQtyZoS_f_D8qCdxCL0s-_S5o",
+                                "width": 512,
+                                "height": 683
+                            },
+                            "full": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/ty4rvOE_NCcBYZW-sOIINg/A76rhPf-3-l4g-oSjOMAZSL9TWN1NcsxujAde8QjF3fNC81wX2qXDVqWaKsIbfjzVszc2-tUJM58pJl36jUnHMZ6StfALV5fNI8gb_0ggJsw6K0qnPOVRd2jzpydPi4cQ88i7It3HOP6TzL8t7AWhQ/92s2CRX1vNDpJEt53W2lLYtTrmji09dYiPPhMFQB0_0",
+                                "width": 2250,
+                                "height": 3000
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": "rec8TkVgPCTqJWQbP",
+            "createdTime": "2026-08-14T22:05:30.000Z",
+            "fields": {
+                "Resident State": "California - CA",
+                "Personal email": "brian.kelly.ir@gmail.com",
+                "SSN": 306081783,
+                "NPN": 17553275,
+                "Full Name": "Brian Kelly",
+                "Discord SMS": "Sent",
+                "States you're licensed in:": [
+                    "Florida - FL",
+                    "Illinois - IL",
+                    "Michigan - MI",
+                    "Indiana - IN",
+                    "Ohio - OH",
+                    "Texas - TX"
+                ],
+                "Added to Company Directory?": "Added",
+                "Email": "brian.kelly.ir@gmail.com",
+                "Bank Details": "Account Number is: 882717655\nRouting Number is: 071000013",
+                "Phone Number": "(317) 250-2659",
+                "Full Mailing Address": "4220 West Melrose Street, Apt 2\nChicago, IL 60641",
+                "Submitted At": "2026-08-14T22:05:30.000Z",
+                "Upload your a screenshot of your internet speed. Go to speedtest.net": [
+                    {
+                        "id": "attKBO7fNP7rw5QdP",
+                        "width": 4032,
+                        "height": 3024,
+                        "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/-Nsx6WWVnc0WbHLHXaX51w/9Wxc-NRU4YQcLgtHZbcjzyfRXEkfzMjNRedqVrUQ3aM_8GJK_kjlDSBWASvE2zS20SMJpx0JpOmt-cMOT-GiUxbnyej_cLKhTa8uNvzLCsThqBFcCYl67UUrXQT7-nmpGv68pRiYAJ5iAlxzHUmkaDdACXDqp2UIqNXV1JugxbY/73Lb2LhmuX0UQhK3y51lPqOnhzSHMs14yyK0VueVvwU",
+                        "filename": "20260814_170123.jpg",
+                        "size": 5203478,
+                        "type": "image/jpeg",
+                        "thumbnails": {
+                            "small": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/01W9wAB3TDMovZSn-QyvKw/MSfjE2GGeozxllAmoWr23l3kDfqBlZp9o37gUO7k-xhfqTs1OHJbYzgLBBXTD1s1Qm6ZIwHlh-NlKfeP7i30YSRaL2VwLSVKC-ijq2GFbersy9eJg9wlAr2CW-QiAvegPS8LZ4XPySHqDh1NlkctUQ/XNLZeaRtifYDNX71f3U2f7fqvK24Pt7igQ-NAKjVfdY",
+                                "width": 48,
+                                "height": 36
+                            },
+                            "large": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/BRP7SSX7LLCZEYFpYoSM9g/MRl4l9HIPvSCrmADiUftGBnN8p-rvfp1IDZXwoJL16sr5E8Jc-bz71VH89x60z-VUSKc3ArWcA3wf07Otxx1jZUygVWFUg9qJx60-g4Q1LQywYJjVC-dPxxCBXUJeYswG0vjiKTEfpQIF-68y1E3tQ/PPMrVkXxAGGtyFlEHe6QE5rp7P5sHV5m-zT3-tjCwq4",
+                                "width": 683,
+                                "height": 512
+                            },
+                            "full": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/JrdRVehkX77q_QjnzcATJg/SgRNvG0hysMvxLYe7pHWAGj-0Wr3sxf43D0pvtU4qq2i4gSJV8vI2SNjp9pvR2f-oCjd4FQvlYYTSVeAHglNWy-5bhkn7_nFGU5fJyAFIzDbqG5yzqpqlzhmPvh9B5JQl7zkgxIf-vWHvu9eYsycKg/0B090Hty5a_5sVjOAh3VeC5BDYUDjvHqNdQC_MBdp9w",
+                                "width": 3000,
+                                "height": 2250
+                            }
+                        }
+                    }
+                ],
+                "First Step": "Done",
+                "First Name": "Brian",
+                "Photo ID": [
+                    {
+                        "id": "atth4eKLEwl5Wp89T",
+                        "width": 486,
+                        "height": 277,
+                        "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/turIBuT5GS4sbbnzLh72BQ/inDUxal9ovyKdetZpK2WPrP32xDkcjSIbKQVNpA6BtFE42_1tcRklq4R93bjQXeKFTanJelMH8yv4vRGQC9YIyCjlQMciFsD0zzu6_ywxAugUlw2vpY1ncC6a9nOE4wwzxEVqHVgBqQS4wdaxC--m81L1tNRSSgANo-1FNEoJyI/WR2XynUxyb8EN8RMU8_UATI09-e63bME5QUbIsg5lGM",
+                        "filename": "Driver's License Pic.jpg",
+                        "size": 42662,
+                        "type": "image/jpeg",
+                        "thumbnails": {
+                            "small": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/LBsUQJW_EbSAPbjxfkPjnA/yoyiqh_cQFQU0RZIroGBB-h4XzKuzkyau8uavPMomI7fKXg_uxJq5p50Ah0UL3c9JuUd_Q6pqV3ldNpq331I31XkpDs7_OJQh8GniF39Rj1DY5xQEsd24VFGWJ6kX72H46oNDRo-yMGbV4m0c-NhTw/DEPUeG4a_QqdoVSgjHtd_L5zOWqYp89hmxh7IQQDTf4",
+                                "width": 63,
+                                "height": 36
+                            },
+                            "large": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/lvTVEgZEibiBpnMulfND8A/E-CYmGxAQGfp2mVnCFna1kkC0MP-MtUSDE-CiZNk38XpQzS4ISgks7YjO2Tn0hUE3UyjomffuFB8W3QypM1b8UmzbG0J_bRjgIV0vVAxHQOOQ2SDkEqvv20rNF1x20iVKlUzo9Gi9W-xxGs0jOrP6w/4r4hdhLzB3OVU5eHki5Y4vF8AFFvHfGyBy3IRDh_Vtg",
+                                "width": 486,
+                                "height": 277
+                            },
+                            "full": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/-3Sg87ZXmcZIL37AQUwMZw/5AEhwpXrLpirQLkHKX8wYvxlD8shVydYVN9vDJZD4K8e1AdN5b6VrJhIEeivLtkFQ245r-ME04N7pIgLxXfo2_lhwpxnvGoDP7q9Rlb1qI_UzcXuXdmJ2rpYhpXh4gJVrCNnIMO2MtLs1WTgVrBmtA/jY4wrw_OKVMdDX04vVn7OKqb3Or5XC-8wOMWmtHDE-c",
+                                "width": 486,
+                                "height": 277
+                            }
+                        }
+                    }
+                ],
+                "Date of Birth": "1976-07-28",
+                "Screenshot of your Social Security Card": [
+                    {
+                        "id": "atttG1MRGAOuxbHi2",
+                        "width": 3024,
+                        "height": 4032,
+                        "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/61Nccqka5pqO4jdfucWTNA/JzXr4kOUVD1q2bCLdoy1M-ketfwegD6MZz6CgkgJCjsYGtPXrhlyRFOwMjBgrUXMYVASsGFVMbymAXLI9V_El8TvwRM14ODaOXUinMUmoa69f2h3gJmjK6hETUswIpEi50wIycTpF-itI72LCvuV5DUruAZ9Tvnfci8IgSEHwhU/yfMoRN0A_RhcfcSa0nRz8Jl3I-aeOw0_9zxix4GceEM",
+                        "filename": "document 1.jpg",
+                        "size": 575696,
+                        "type": "image/jpeg",
+                        "thumbnails": {
+                            "small": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/8vG7UsXmBXP8tYFOaurMAA/a6zIfBVxLguQ7S8CPkA1mIey4Gmp6rpHPFS2NPovWfSm3TkXbKPZ8aC01MVCUeMV_fOXCNRq2D-AADYTuCRZjh1Aek8Gm8X1HociztpNhuzjzWlOHoi4MNQnVDaY6CvZ8xesR11SqkOqxbXRozuGkQ/cDbMX3OwkuC7tIaV5v1VwJ9F24-xPclB6g4wS2Rm82I",
+                                "width": 27,
+                                "height": 36
+                            },
+                            "large": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/r4VPevMpVtC_MQg7RBKeUA/F-8tIHqlveFmGAFMTIHq18gsgdKdlYtqWBDi-DX0_siqPkMFgoOU5coNLcUwyJKDdqyEsIXsvg6S-uo8PZY2apjfY6mOlju9JEFq_AMBNyQviNcg-vBXZvMvKzGyi6Xm8W_af7dER5qA4zrqwd7fKw/DFKexXDomWguxGK3gu-QK2FnVNt6EFAmF-UBkY6m0M0",
+                                "width": 512,
+                                "height": 683
+                            },
+                            "full": {
+                                "url": "https://v5.airtableusercontent.com/v3/u/57/57/1788969600000/hfvGAPYbURFZsQqq3wsOmQ/Ke3G2NhueyUVHClSiVnVQS-mFy9jh5hcVPkWL7qISZFNCR_btCRL8UfD22n-RUCERSNxwcek_Pe8tVWPDad16XydJVEtsZetzV_k9qw7ZNDal3yb07dL2Ln3rNl-0Sfg9GWkEhtHIJJqIn-lEBMQaA/NcV1omW_BSUe-0ISXwx7YLnegVdOqEwwp56FCX1mtRU",
+                                "width": 2250,
+                                "height": 3000
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "offset": "itreVeGd1HYARLCoc/rec8TkVgPCTqJWQbP"
+}

@@ -283,12 +283,12 @@ export default function OnboardingIndex({ agents, filters }: Props) {
 
     return (
         <>
-            <Head title="Onboarding review" />
+            <Head title="License Agents Onboarding review" />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <Heading
                     variant="small"
-                    title="Onboarding review"
+                    title="License Agents Onboarding review"
                     description="Review agent eligibility and training progress"
                 />
 
@@ -700,7 +700,7 @@ export default function OnboardingIndex({ agents, filters }: Props) {
 OnboardingIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Onboarding review',
+            title: 'License Agents Onboarding review',
             href: index(),
         },
     ],

@@ -26,6 +26,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $password
  * @property string|null $excel_id
  * @property array<string, mixed>|null $metadata
+ * @property string|null $source
  * @property bool $is_active
  * @property bool $must_change_password
  * @property Carbon|null $last_login_at
@@ -36,12 +37,24 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'is_active', 'must_change_password'])]
+#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'source', 'is_active', 'must_change_password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * Where an account was created from — recorded in `source` so admins
+     * can tell an agent invited by hand from one pulled in automatically.
+     */
+    public const SOURCE_MANUAL = 'manual';
+
+    public const SOURCE_CUSTOMER_API = 'customer_api';
+
+    public const SOURCE_PITCH_HEALTH = 'pitch_health';
+
+    public const SOURCE_PITCH_PERFECT = 'pitch_perfect';
 
     /**
      * Get the attributes that should be cast.

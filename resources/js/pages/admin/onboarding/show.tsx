@@ -194,7 +194,7 @@ export default function OnboardingShow({ agent, auditLog }: Props) {
 
     return (
         <>
-            <Head title="Onboarding review" />
+            <Head title="License Agents Onboarding review" />
 
             <div className="mx-auto flex h-full max-w-4xl flex-1 flex-col gap-4 p-4">
                 <Link
@@ -202,7 +202,7 @@ export default function OnboardingShow({ agent, auditLog }: Props) {
                     className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
                 >
                     <ArrowLeft className="size-4" />
-                    Back to onboarding review
+                    Back to License Agents Onboarding review
                 </Link>
 
                 <div className="flex items-center gap-3">
@@ -1792,7 +1792,7 @@ export default function OnboardingShow({ agent, auditLog }: Props) {
 OnboardingShow.layout = {
     breadcrumbs: [
         {
-            title: 'Onboarding review',
+            title: 'License Agents Onboarding review',
             href: index(),
         },
         {

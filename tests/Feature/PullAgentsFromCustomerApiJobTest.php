@@ -50,6 +50,7 @@ test('pulling a new agent creates an active account with the default password', 
     expect($agent->hasRole('agent'))->toBeTrue();
     expect(Hash::check('password', $agent->password))->toBeTrue();
     expect($agent->must_change_password)->toBeTrue();
+    expect($agent->source)->toBe(User::SOURCE_CUSTOMER_API);
 });
 
 test('pulling agents skips students without an email and existing users', function () {

@@ -1,0 +1,141 @@
+<?php
+
+namespace App\Jobs;
+
+use App\Models\User;
+use App\Notifications\PitchPerfectSyncCompletedNotification;
+use App\Services\AirtableClient;
+use Illuminate\Bus\Batch;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+
+class PullPitchPerfectFromAirtableJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    // Small enough that a single chunk job comfortably finishes well
+    // inside the queue worker's default 60s timeout, however large the
+    // whole base gets.
+    private const BATCH_SIZE = 50;
+
+    /**
+     * Paging through every record is still one job, but the network calls
+     * involved can add up on a large base — give it room the per-chunk
+     * write jobs below don't need.
+     */
+    public int $timeout = 300;
+
+    /**
+     * @param  User|null  $triggeredBy  The admin who clicked "Pull
+     *                                  PitchPerfect", or null when the
+     *                                  nightly schedule ran this instead of
+     *                                  a person.
+     */
+    public function __construct(
+        private readonly ?User $triggeredBy = null,
+    ) {}
+
+    /**
+     * Page through every record in the PitchPerfect Airtable table, then
+     * hand the actual writes off to small batched jobs
+     * (SyncPitchPerfectRecordsBatchJob) instead of doing them all in this
+     * one job — a large base's worth of upserts and user creations could
+     * otherwise run long enough to hit the queue worker's timeout.
+     */
+    public function handle(AirtableClient $client): void
+    {
+        $records = iterator_to_array($client->eachPitchPerfectRecord(), false);
+
+        $synced = count($records);
+        $created = $this->countPendingAccounts($records);
+
+        $triggeredBy = $this->triggeredBy;
+
+        if ($records === []) {
+            self::notifyResult($triggeredBy, $synced, $created);
+
+            return;
+        }
+
+        $jobs = collect($records)
+            ->chunk(self::BATCH_SIZE)
+            ->map(fn ($chunk) => new SyncPitchPerfectRecordsBatchJob($chunk->values()->all()))
+            ->all();
+
+        Bus::batch($jobs)
+            ->name('pitch-perfect-sync')
+            ->allowFailures()
+            ->finally(function (Batch $batch) use ($triggeredBy, $synced, $created) {
+                self::notifyResult($triggeredBy, $synced, $created);
+            })
+            ->dispatch();
+    }
+
+    /**
+     * How many of these records' emails don't have an account yet — an
+     * up-front count so the completion notification can report a number
+     * without waiting on every batch job to report back its own tally.
+     * Only `Status: Active` records count — the rest are saved as
+     * submissions but never get an account.
+     *
+     * @param  array<int, array{id: string, createdTime: string, fields: array<string, mixed>}>  $records
+     */
+    private function countPendingAccounts(array $records): int
+    {
+        // MySQL's `email` column is case-insensitive, so two records whose
+        // emails only differ by case are really the same account — compare
+        // the same way SyncPitchPerfectRecordsBatchJob does, or this count
+        // won't match what actually gets created.
+        $emails = collect($records)
+            ->filter(fn (array $record) => ($record['fields']['Status'] ?? null) === 'Active')
+            ->map(fn (array $record) => $record['fields']['Email'] ?? $record['fields']['Personal email'] ?? null)
+            ->filter()
+            ->unique(fn (string $email) => mb_strtolower($email))
+            ->values();
+
+        $existingEmails = User::query()
+            ->whereIn(DB::raw('LOWER(email)'), $emails->map(fn (string $email) => mb_strtolower($email)))
+            ->pluck('email')
+            ->map(fn (string $email) => mb_strtolower($email))
+            ->flip();
+
+        return $emails->reject(fn (string $email) => $existingEmails->has(mb_strtolower($email)))->count();
+    }
+
+    /**
+     * Send the same "pull finished" notifications the Pitch Health pull
+     * sends, once every batch job has run.
+     */
+    private static function notifyResult(?User $triggeredBy, int $synced, int $created): void
+    {
+        // Same pattern as the agent roster pull: a manual click always gets
+        // a definitive answer, even "0 synced" confirms the click did
+        // something, while the unattended nightly run only notifies
+        // reviewers when there's actually something to see.
+        if ($triggeredBy) {
+            $triggeredBy->notify(new PitchPerfectSyncCompletedNotification($synced, $created));
+        }
+
+        if ($synced > 0) {
+            $reviewers = User::onboardingReviewers();
+
+            if ($triggeredBy) {
+                $reviewers = $reviewers->reject(fn (User $reviewer) => $reviewer->is($triggeredBy));
+            }
+
+            Notification::send($reviewers, new PitchPerfectSyncCompletedNotification($synced, $created));
+        }
+
+        Log::info('PitchPerfect sync finished.', [
+            'synced' => $synced,
+            'created' => $created,
+        ]);
+    }
+}

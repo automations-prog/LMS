@@ -1,6 +1,9 @@
 <?php
 
+use App\Jobs\LinkPitchHealthUsersToXcelJob;
 use App\Jobs\PullAgentsFromCustomerApiJob;
+use App\Jobs\PullPitchHealthFromAirtableJob;
+use App\Jobs\PullPitchPerfectFromAirtableJob;
 use App\Jobs\SendExpiryRemindersJob;
 use App\Jobs\SyncAllAgentsTrainingProgressJob;
 use Illuminate\Foundation\Inspiring;
@@ -24,6 +27,30 @@ Schedule::job(new PullAgentsFromCustomerApiJob)
 Schedule::job(new SyncAllAgentsTrainingProgressJob)
     ->everyFourHours()
     ->name('sync-training-progress')
+    ->onOneServer();
+
+// Keep each agent's Pitch Health data (from the Airtable onboarding form)
+// in step with Airtable overnight, instead of relying on an admin clicking
+// "Pull Pitch Health".
+Schedule::job(new PullPitchHealthFromAirtableJob)
+    ->dailyAt('03:00')
+    ->name('sync-pitch-health')
+    ->onOneServer();
+
+// Catch any Pitch Health user XCEL didn't have a matching student record
+// for at pull time (03:00) but does by now — the pull itself already tries
+// this right after each sync, this is just the nightly safety net.
+Schedule::job(new LinkPitchHealthUsersToXcelJob)
+    ->dailyAt('03:30')
+    ->name('link-pitch-health-to-xcel')
+    ->onOneServer();
+
+// Keep each agent's PitchPerfect data (from the Airtable onboarding form)
+// in step with Airtable overnight, instead of relying on an admin clicking
+// "Pull PitchPerfect".
+Schedule::job(new PullPitchPerfectFromAirtableJob)
+    ->dailyAt('04:00')
+    ->name('sync-pitch-perfect')
     ->onOneServer();
 
 // Warn agents before a verified license or AHIP certification lapses —
