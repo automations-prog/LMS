@@ -17,16 +17,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    AHIP_STATUS_LABELS,
+    ELIGIBILITY_STATUS_LABELS,
+    LICENSE_STATUS_LABELS,
+    TRAINING_STATUS_LABELS,
+} from '@/lib/onboarding-status-labels';
 import { index } from '@/routes/onboarding';
 import type { Paginator } from '@/types';
 import type { OnboardingAgent } from '@/types/onboarding';
-
-const ELIGIBILITY_STATUS_LABELS: Record<string, string> = {
-    pending: 'Pending',
-    flagged_for_waiver: 'Flagged for waiver',
-    cleared: 'Eligible',
-    not_eligible: 'Not eligible',
-};
 
 const ELIGIBILITY_BADGE_CLASSES: Record<string, string> = {
     pending:
@@ -39,12 +38,6 @@ const ELIGIBILITY_BADGE_CLASSES: Record<string, string> = {
         'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
 };
 
-const TRAINING_STATUS_LABELS: Record<string, string> = {
-    pending_review: 'Pending review',
-    verified: 'Verified',
-    rejected: 'Rejected',
-};
-
 const TRAINING_BADGE_CLASSES: Record<string, string> = {
     pending_review:
         'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
@@ -54,12 +47,6 @@ const TRAINING_BADGE_CLASSES: Record<string, string> = {
         'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
 };
 
-const LICENSE_STATUS_LABELS: Record<string, string> = {
-    pending_review: 'Pending review',
-    verified: 'Verified',
-    rejected: 'Rejected',
-};
-
 const LICENSE_BADGE_CLASSES: Record<string, string> = {
     pending_review:
         'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
@@ -67,12 +54,6 @@ const LICENSE_BADGE_CLASSES: Record<string, string> = {
         'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
     rejected:
         'border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
-};
-
-const AHIP_STATUS_LABELS: Record<string, string> = {
-    pending_review: 'Pending review',
-    verified: 'Verified',
-    rejected: 'Rejected',
 };
 
 const AHIP_BADGE_CLASSES: Record<string, string> = {

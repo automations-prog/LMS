@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\AhipCertification;
 use App\Models\EligibilityAttestation;
 use App\Models\LicenseSubmission;
+use App\Models\RoleplaySession;
 use App\Models\TrainingCompletion;
 use App\Models\User;
 use App\Support\ContractingStages;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -26,7 +28,7 @@ class DashboardController extends Controller
     public function index(Request $request): Response|RedirectResponse
     {
         if ($request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return $this->managementDashboard();
+            return $this->managementDashboard($request);
         }
 
         // Newly activated agents must complete the eligibility form before
@@ -42,8 +44,33 @@ class DashboardController extends Controller
     /**
      * The admin/super-admin dashboard, with a few temporary at-a-glance charts.
      */
-    private function managementDashboard(): Response
+    private function managementDashboard(Request $request): Response
     {
+        $eligibilityStatus = $request->string('eligibility_status')->trim()->toString();
+        $trainingStatus = $request->string('training_status')->trim()->toString();
+        $licenseStatus = $request->string('license_status')->trim()->toString();
+        $ahipStatus = $request->string('ahip_status')->trim()->toString();
+
+        $anyFilterActive = $eligibilityStatus !== '' || $trainingStatus !== '' || $licenseStatus !== '' || $ahipStatus !== '';
+
+        // Same "which agents match these statuses" query Onboarding Review
+        // uses, just reduced to an id list — null (rather than an empty
+        // Collection) when no filter is active, so every query below can
+        // stay untouched on a normal, unfiltered dashboard load.
+        $filteredAgentIds = $anyFilterActive
+            ? User::query()
+                ->role('agent')
+                ->when($eligibilityStatus !== '', fn ($query) => $query
+                    ->whereHas('eligibilityAttestation', fn ($query) => $query->where('status', $eligibilityStatus)))
+                ->when($trainingStatus !== '', fn ($query) => $query
+                    ->whereHas('trainingCompletion', fn ($query) => $query->where('status', $trainingStatus)))
+                ->when($licenseStatus !== '', fn ($query) => $query
+                    ->whereHas('licenseSubmission', fn ($query) => $query->where('status', $licenseStatus)))
+                ->when($ahipStatus !== '', fn ($query) => $query
+                    ->whereHas('ahipCertification', fn ($query) => $query->where('status', $ahipStatus)))
+                ->pluck('id')
+            : null;
+
         // One query for all 3 role counts (via Spatie's Role::users()
         // relation) instead of one User::whereHas(...)->count() per role.
         $roleCounts = Role::whereIn('name', ['agent', 'admin', 'super-admin'])
@@ -65,6 +92,7 @@ class DashboardController extends Controller
         // One grouped query for all 4 eligibility statuses instead of one
         // EligibilityAttestation::where('status', ...)->count() per status.
         $eligibilityCounts = EligibilityAttestation::query()
+            ->when($filteredAgentIds !== null, fn ($query) => $query->whereIn('user_id', $filteredAgentIds))
             ->selectRaw('status, count(*) as aggregate')
             ->groupBy('status')
             ->pluck('aggregate', 'status');
@@ -113,11 +141,12 @@ class DashboardController extends Controller
             ['key' => 'license', 'label' => 'License', 'model' => LicenseSubmission::class],
             ['key' => 'ahip', 'label' => 'AHIP', 'model' => AhipCertification::class],
         ])
-            ->map(function (array $stage) {
+            ->map(function (array $stage) use ($filteredAgentIds) {
                 /** @var class-string<TrainingCompletion|LicenseSubmission|AhipCertification> $model */
                 $model = $stage['model'];
 
                 $counts = $model::query()
+                    ->when($filteredAgentIds !== null, fn ($query) => $query->whereIn('user_id', $filteredAgentIds))
                     ->selectRaw('status, count(*) as aggregate')
                     ->groupBy('status')
                     ->pluck('aggregate', 'status');
@@ -135,6 +164,7 @@ class DashboardController extends Controller
         // One query with a conditional-aggregate column per stage instead of
         // one EligibilityAttestation::whereNotNull(...)->count() per stage.
         $contractingCounts = EligibilityAttestation::query()
+            ->when($filteredAgentIds !== null, fn ($query) => $query->whereIn('user_id', $filteredAgentIds))
             ->selectRaw(
                 collect(ContractingStages::ALL)
                     ->map(fn (string $stage) => sprintf(
@@ -165,16 +195,33 @@ class DashboardController extends Controller
             ->selectRaw('count(*) as total, sum(case when is_active then 1 else 0 end) as active')
             ->first();
 
+        $roleplayTotals = RoleplaySession::query()
+            ->where('status', RoleplaySession::STATUS_SCORED)
+            ->selectRaw('count(*) as scored, avg(overall_score) as avg_score')
+            ->first();
+
         return Inertia::render('dashboard', [
+            'filters' => [
+                'eligibility_status' => $eligibilityStatus,
+                'training_status' => $trainingStatus,
+                'license_status' => $licenseStatus,
+                'ahip_status' => $ahipStatus,
+            ],
             'stats' => [
                 'total_users' => (int) $userTotals->total,
                 'active_users' => (int) $userTotals->active,
-                'pending_eligibility_reviews' => EligibilityAttestation::whereIn(
-                    'status', EligibilityAttestation::UNDER_REVIEW_STATUSES,
-                )->count(),
-                'pending_training_reviews' => TrainingCompletion::where(
-                    'status', TrainingCompletion::STATUS_PENDING_REVIEW,
-                )->count(),
+                'pending_eligibility_reviews' => EligibilityAttestation::query()
+                    ->when($filteredAgentIds !== null, fn ($query) => $query->whereIn('user_id', $filteredAgentIds))
+                    ->whereIn('status', EligibilityAttestation::UNDER_REVIEW_STATUSES)
+                    ->count(),
+                'pending_training_reviews' => TrainingCompletion::query()
+                    ->when($filteredAgentIds !== null, fn ($query) => $query->whereIn('user_id', $filteredAgentIds))
+                    ->where('status', TrainingCompletion::STATUS_PENDING_REVIEW)
+                    ->count(),
+                'roleplay_sessions_scored' => (int) $roleplayTotals->scored,
+                'roleplay_avg_score' => $roleplayTotals->avg_score !== null
+                    ? round((float) $roleplayTotals->avg_score, 1)
+                    : null,
             ],
             'charts' => [
                 'users_by_role' => $usersByRole,
@@ -182,7 +229,7 @@ class DashboardController extends Controller
                 'signups_per_day' => $signupsPerDay,
                 'onboarding_stage_status' => $onboardingStageStatus,
                 'contracting_funnel' => $contractingFunnel,
-                'onboarding_funnel' => $this->onboardingFunnel(),
+                'onboarding_funnel' => $this->onboardingFunnel($filteredAgentIds),
             ],
         ]);
     }
@@ -198,9 +245,10 @@ class DashboardController extends Controller
      * Computed in PHP rather than a database-side date diff so it behaves
      * the same on sqlite (tests) and whatever the app runs in production.
      *
+     * @param  Collection<int, int>|null  $filteredAgentIds  Narrow the funnel to just these agents' attestations, or null for everyone.
      * @return array<int, array{key: string, label: string, count: int, avg_days: float}>
      */
-    private function onboardingFunnel(): array
+    private function onboardingFunnel(?Collection $filteredAgentIds = null): array
     {
         $stages = [
             ['key' => 'submitted', 'label' => 'Submitted', 'column' => null],
@@ -217,6 +265,7 @@ class DashboardController extends Controller
         $columns = collect($stages)->pluck('column')->filter()->values()->all();
 
         $attestations = EligibilityAttestation::query()
+            ->when($filteredAgentIds !== null, fn ($query) => $query->whereIn('user_id', $filteredAgentIds))
             ->select(['id', 'created_at', ...$columns])
             ->get();
 
@@ -248,22 +297,64 @@ class DashboardController extends Controller
     }
 
     /**
-     * The agent dashboard — a plain welcome landing page, no user-management
-     * or resource data of any kind touches this response. The one exception
-     * is the agent's own eligibility/enrollment/training status, which the
-     * page uses to decide which onboarding step (if any) to show.
+     * The agent dashboard — blank apart from the "eligibility under review"
+     * notice (while that's the state) and the agent's own license/AHIP
+     * expiry warnings; the full onboarding step tracker lives on its own
+     * page now — see onboardingJourney().
      */
     private function agentDashboard(Request $request): Response
     {
-        $attestation = $request->user()->eligibilityAttestation;
-        $training = $request->user()->trainingCompletion;
-        $license = $request->user()->licenseSubmission;
-        $ahip = $request->user()->ahipCertification;
+        $data = $this->agentOnboardingData($request->user());
 
         return Inertia::render('dashboard-agent', [
-            'eligibilityStatus' => in_array($attestation?->status, EligibilityAttestation::UNDER_REVIEW_STATUSES, true)
-                ? 'under_review'
-                : $attestation?->status,
+            'eligibilityStatus' => $data['eligibilityStatus'],
+            'licenseStatus' => $data['licenseStatus'],
+            'licenseExpiresAt' => $data['licenseExpiresAt'],
+            'ahipStatus' => $data['ahipStatus'],
+            'ahipExpiresAt' => $data['ahipExpiresAt'],
+        ]);
+    }
+
+    /**
+     * The full onboarding step tracker — the journey path plus whichever
+     * action card is next (enrollment, training, exam, fingerprinting,
+     * license, AHIP, contracting). Split out of the dashboard so agents get
+     * a light landing page there instead of the whole checklist every time.
+     */
+    public function onboardingJourney(Request $request): Response|RedirectResponse
+    {
+        // Agent-only data — an admin/super-admin has none of this. Checked
+        // before the eligibility-attestation gate below, since an admin
+        // never has one either and would otherwise get redirected to the
+        // eligibility form instead of a 404.
+        abort_if($request->user()->hasAnyRole(['admin', 'super-admin']), 404);
+
+        // Same gate as index() applies before ever reaching agentDashboard()
+        // — reachable directly by URL, so it needs its own copy of the check.
+        if (! $request->user()->eligibilityAttestation) {
+            return redirect()->route('eligibility.create');
+        }
+
+        return Inertia::render('onboarding-journey', $this->agentOnboardingData($request->user()));
+    }
+
+    /**
+     * The agent's full eligibility/enrollment/training/license/AHIP/
+     * contracting state — shared by the trimmed-down dashboard (which only
+     * needs a slice of it for the expiry banners) and the full onboarding
+     * journey page (which needs all of it).
+     *
+     * @return array<string, mixed>
+     */
+    private function agentOnboardingData(User $user): array
+    {
+        $attestation = $user->eligibilityAttestation;
+        $training = $user->trainingCompletion;
+        $license = $user->licenseSubmission;
+        $ahip = $user->ahipCertification;
+
+        return [
+            'eligibilityStatus' => $user->eligibilityDisplayStatus(),
             'enrollmentCompleted' => $attestation?->enrollment_completed_at !== null,
             'trainingStatus' => $training?->status,
             'trainingNote' => $training?->status === TrainingCompletion::STATUS_REJECTED ? $training->note : null,
@@ -283,6 +374,6 @@ class DashboardController extends Controller
                 'carrier_certs' => $attestation?->contracting_carrier_certs_at !== null,
                 'complete' => $attestation?->contracting_complete_at !== null,
             ] : null,
-        ]);
+        ];
     }
 }

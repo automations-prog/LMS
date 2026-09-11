@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\RoleplaySession;
 use App\Models\User;
+use App\Support\RoleplayVertical;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,7 +21,8 @@ class RoleplaySessionFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'scenario_key' => config('roleplay.scenario.key'),
+            'scenario_key' => RoleplayVertical::config('medicare')['scenario']['key'],
+            'vertical' => 'medicare',
             'status' => RoleplaySession::STATUS_IN_PROGRESS,
             'started_at' => now(),
         ];
@@ -46,23 +48,25 @@ class RoleplaySessionFactory extends Factory
      */
     public function scored(): static
     {
-        /** @var array<int, array{key: string, label: string, description: string}> $rubric */
-        $rubric = config('roleplay.rubric');
+        return $this->completed()->state(function (array $attributes) {
+            /** @var array<int, array{key: string, label: string, description: string}> $rubric */
+            $rubric = RoleplayVertical::config($attributes['vertical'] ?? 'medicare')['rubric'];
 
-        return $this->completed()->state(fn () => [
-            'status' => RoleplaySession::STATUS_SCORED,
-            'overall_score' => 78,
-            'score' => [
-                'criteria' => array_map(fn (array $criterion) => [
-                    'key' => $criterion['key'],
-                    'label' => $criterion['label'],
-                    'score' => 4,
-                    'feedback' => 'Solid, could be more specific.',
-                ], $rubric),
+            return [
+                'status' => RoleplaySession::STATUS_SCORED,
                 'overall_score' => 78,
-                'summary' => 'A solid first attempt with room to tighten up objection handling.',
-            ],
-            'scored_at' => now(),
-        ]);
+                'score' => [
+                    'criteria' => array_map(fn (array $criterion) => [
+                        'key' => $criterion['key'],
+                        'label' => $criterion['label'],
+                        'score' => 4,
+                        'feedback' => 'Solid, could be more specific.',
+                    ], $rubric),
+                    'overall_score' => 78,
+                    'summary' => 'A solid first attempt with room to tighten up objection handling.',
+                ],
+                'scored_at' => now(),
+            ];
+        });
     }
 }

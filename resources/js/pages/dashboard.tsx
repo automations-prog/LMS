@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Bar,
     BarChart,
@@ -18,8 +18,22 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    AHIP_STATUS_LABELS,
+    ELIGIBILITY_STATUS_LABELS,
+    LICENSE_STATUS_LABELS,
+    TRAINING_STATUS_LABELS,
+} from '@/lib/onboarding-status-labels';
 import { dashboard } from '@/routes';
 import { index as onboardingIndex } from '@/routes/onboarding';
+import { index as roleplayAccessIndex } from '@/routes/roleplay/access';
 
 type DataPoint = {
     key: string;
@@ -52,6 +66,8 @@ type Stats = {
     active_users: number;
     pending_eligibility_reviews: number;
     pending_training_reviews: number;
+    roleplay_sessions_scored: number;
+    roleplay_avg_score: number | null;
 };
 
 type Charts = {
@@ -63,27 +79,59 @@ type Charts = {
     onboarding_funnel: FunnelPoint[];
 };
 
+type Filters = {
+    eligibility_status: string;
+    training_status: string;
+    license_status: string;
+    ahip_status: string;
+};
+
 type Props = {
+    filters: Filters;
     stats: Stats;
     charts: Charts;
 };
 
+function applyFilters(overrides: Partial<Filters>, filters: Filters) {
+    router.get(
+        dashboard().url,
+        { ...filters, ...overrides },
+        { preserveState: true, preserveScroll: true, replace: true },
+    );
+}
+
 const STAT_CARDS: {
     key: keyof Stats;
     label: string;
-    href?: ReturnType<typeof onboardingIndex>;
+    href?:
+        | ReturnType<typeof onboardingIndex>
+        | ReturnType<typeof roleplayAccessIndex>;
 }[] = [
     { key: 'total_users', label: 'Total users' },
     { key: 'active_users', label: 'Active users' },
     {
         key: 'pending_eligibility_reviews',
         label: 'Pending eligibility reviews',
-        href: onboardingIndex(),
+        // Deep-links straight into the filtered list rather than just the
+        // unfiltered onboarding review page — "flagged for waiver" is the
+        // other under-review status this count includes, but there's no
+        // single status filter that covers both at once.
+        href: onboardingIndex({ query: { eligibility_status: 'pending' } }),
     },
     {
         key: 'pending_training_reviews',
         label: 'Pending XCEL Training reviews',
-        href: onboardingIndex(),
+        href: onboardingIndex({ query: { training_status: 'pending_review' } }),
+    },
+    {
+        key: 'roleplay_sessions_scored',
+        label: 'Roleplay calls scored',
+        href: roleplayAccessIndex(),
+    },
+    {
+        key: 'roleplay_avg_score',
+        label: 'Avg. roleplay score',
+        href: roleplayAccessIndex(),
     },
 ];
 
@@ -118,7 +166,7 @@ const ONBOARDING_FUNNEL_CHART_CONFIG = {
     count: { label: 'Agents', color: 'var(--chart-2)' },
 } satisfies ChartConfig;
 
-export default function Dashboard({ stats, charts }: Props) {
+export default function Dashboard({ filters, stats, charts }: Props) {
     const totalCases = charts.eligibility_by_status.reduce(
         (sum, point) => sum + point.value,
         0,
@@ -128,6 +176,139 @@ export default function Dashboard({ stats, charts }: Props) {
         <>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                        value={
+                            filters.eligibility_status === ''
+                                ? 'all'
+                                : filters.eligibility_status
+                        }
+                        onValueChange={(status) =>
+                            applyFilters(
+                                {
+                                    eligibility_status:
+                                        status === 'all' ? '' : status,
+                                },
+                                filters,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-56">
+                            <SelectValue placeholder="Eligibility status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                All eligibility statuses
+                            </SelectItem>
+                            {Object.entries(ELIGIBILITY_STATUS_LABELS).map(
+                                ([status, label]) => (
+                                    <SelectItem key={status} value={status}>
+                                        {label}
+                                    </SelectItem>
+                                ),
+                            )}
+                        </SelectContent>
+                    </Select>
+
+                    <Select
+                        value={
+                            filters.training_status === ''
+                                ? 'all'
+                                : filters.training_status
+                        }
+                        onValueChange={(status) =>
+                            applyFilters(
+                                {
+                                    training_status:
+                                        status === 'all' ? '' : status,
+                                },
+                                filters,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-56">
+                            <SelectValue placeholder="XCEL Training status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                All XCEL Training statuses
+                            </SelectItem>
+                            {Object.entries(TRAINING_STATUS_LABELS).map(
+                                ([status, label]) => (
+                                    <SelectItem key={status} value={status}>
+                                        {label}
+                                    </SelectItem>
+                                ),
+                            )}
+                        </SelectContent>
+                    </Select>
+
+                    <Select
+                        value={
+                            filters.license_status === ''
+                                ? 'all'
+                                : filters.license_status
+                        }
+                        onValueChange={(status) =>
+                            applyFilters(
+                                {
+                                    license_status:
+                                        status === 'all' ? '' : status,
+                                },
+                                filters,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-56">
+                            <SelectValue placeholder="License copy status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                All license copy statuses
+                            </SelectItem>
+                            {Object.entries(LICENSE_STATUS_LABELS).map(
+                                ([status, label]) => (
+                                    <SelectItem key={status} value={status}>
+                                        {label}
+                                    </SelectItem>
+                                ),
+                            )}
+                        </SelectContent>
+                    </Select>
+
+                    <Select
+                        value={
+                            filters.ahip_status === ''
+                                ? 'all'
+                                : filters.ahip_status
+                        }
+                        onValueChange={(status) =>
+                            applyFilters(
+                                {
+                                    ahip_status: status === 'all' ? '' : status,
+                                },
+                                filters,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-56">
+                            <SelectValue placeholder="AHIP cert status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                All AHIP cert statuses
+                            </SelectItem>
+                            {Object.entries(AHIP_STATUS_LABELS).map(
+                                ([status, label]) => (
+                                    <SelectItem key={status} value={status}>
+                                        {label}
+                                    </SelectItem>
+                                ),
+                            )}
+                        </SelectContent>
+                    </Select>
+                </div>
+
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {STAT_CARDS.map((card) => {
                         const content = (
@@ -136,7 +317,7 @@ export default function Dashboard({ stats, charts }: Props) {
                                     {card.label}
                                 </p>
                                 <p className="mt-1 text-2xl font-semibold">
-                                    {stats[card.key]}
+                                    {stats[card.key] ?? '—'}
                                 </p>
                             </>
                         );
@@ -409,7 +590,9 @@ export default function Dashboard({ stats, charts }: Props) {
                 </div>
 
                 <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-                    <p className="text-sm font-medium">License Agents Onboarding funnel</p>
+                    <p className="text-sm font-medium">
+                        License Agents Onboarding funnel
+                    </p>
                     <p className="mb-4 text-xs text-muted-foreground">
                         Agents who&apos;ve reached each checkpoint, and the
                         average days since they submitted eligibility.

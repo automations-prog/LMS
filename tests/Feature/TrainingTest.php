@@ -27,7 +27,7 @@ test('an agent with no record can submit a certificate', function () {
 
     $this->actingAs($agent)
         ->post(route('training.store'), ['certificate_file' => certificateFile()])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     $completion = $agent->trainingCompletion()->first();
 
@@ -50,7 +50,7 @@ test('submitting a certificate notifies every reviewer, but not other agents', f
 
     $this->actingAs($agent)
         ->post(route('training.store'), ['certificate_file' => certificateFile()])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     Notification::assertSentTo($admin, NewSubmissionForReviewNotification::class);
     Notification::assertNotSentTo($otherAgent, NewSubmissionForReviewNotification::class);
@@ -97,7 +97,7 @@ test('an agent can resubmit after a rejection, clearing the previous note', func
 
     $this->actingAs($agent)
         ->post(route('training.store'), ['certificate_file' => certificateFile('new-certificate.pdf')])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     $completion->refresh();
 

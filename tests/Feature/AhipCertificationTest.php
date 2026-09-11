@@ -27,7 +27,7 @@ test('an agent with no record can submit an AHIP certificate', function () {
 
     $this->actingAs($agent)
         ->post(route('ahip-certification.store'), ['certificate_file' => ahipCertificateFile()])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     $certification = $agent->ahipCertification()->first();
 
@@ -47,7 +47,7 @@ test('submitting an AHIP certificate notifies every reviewer', function () {
 
     $this->actingAs($agent)
         ->post(route('ahip-certification.store'), ['certificate_file' => ahipCertificateFile()])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     Notification::assertSentTo($admin, NewSubmissionForReviewNotification::class);
 });
@@ -93,7 +93,7 @@ test('an agent can resubmit after a rejection, clearing the previous note', func
 
     $this->actingAs($agent)
         ->post(route('ahip-certification.store'), ['certificate_file' => ahipCertificateFile('new-certificate.pdf')])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     $certification->refresh();
 

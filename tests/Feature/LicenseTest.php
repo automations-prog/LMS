@@ -27,7 +27,7 @@ test('an agent with no record can submit a license copy', function () {
 
     $this->actingAs($agent)
         ->post(route('license.store'), ['license_file' => licenseFile()])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     $submission = $agent->licenseSubmission()->first();
 
@@ -47,7 +47,7 @@ test('submitting a license copy notifies every reviewer', function () {
 
     $this->actingAs($agent)
         ->post(route('license.store'), ['license_file' => licenseFile()])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     Notification::assertSentTo($admin, NewSubmissionForReviewNotification::class);
 });
@@ -93,7 +93,7 @@ test('an agent can resubmit after a rejection, clearing the previous note', func
 
     $this->actingAs($agent)
         ->post(route('license.store'), ['license_file' => licenseFile('new-license.pdf')])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     $submission->refresh();
 

@@ -36,6 +36,11 @@ class StoreUserRequest extends FormRequest
         return [
             ...$this->profileRules(),
             'role' => ['required', 'string', Rule::in(UserPolicy::assignableRoles($this->user()))],
+            // 'none' is the Select's explicit "no segment" option — Radix's
+            // Select can't submit an empty string as a value, so the
+            // frontend sends this sentinel instead; the controller maps it
+            // back to null before saving.
+            'agent_type' => ['nullable', 'string', Rule::in([...array_keys(User::AGENT_TYPES), 'none'])],
             'password' => ['nullable', 'required_if:role,admin,super-admin', 'string', Password::default()],
         ];
     }

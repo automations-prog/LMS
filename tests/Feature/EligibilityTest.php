@@ -147,7 +147,7 @@ test('an agent with a decided attestation is redirected to the dashboard from th
 
     $this->actingAs($agent)
         ->get(route('eligibility.create'))
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     $this->actingAs($agent)
         ->post(route('eligibility.store'), eligibilityPayload())
@@ -189,7 +189,7 @@ test('the pending-review page is only reachable while under review', function ()
 
     $this->actingAs($clearedAgent)
         ->get(route('eligibility.pending'))
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 });
 
 test('a cleared agent can mark enrollment as done with a line of authority', function () {
@@ -201,7 +201,7 @@ test('a cleared agent can mark enrollment as done with a line of authority', fun
 
     $this->actingAs($agent)
         ->post(route('eligibility.complete-enrollment'), ['line_of_authority' => 'life'])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     $attestation->refresh();
     expect($attestation->enrollment_completed_at)->not->toBeNull();
@@ -260,7 +260,7 @@ test('an agent with verified training can schedule their exam with a proctoring 
 
     $this->actingAs($agent)
         ->post(route('eligibility.schedule-exam'), ['proctoring_type' => 'remote'])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.journey'));
 
     $attestation->refresh();
     expect($attestation->exam_scheduled_at)->not->toBeNull();

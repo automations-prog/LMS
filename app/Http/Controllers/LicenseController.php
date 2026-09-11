@@ -43,6 +43,6 @@ class LicenseController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('License copy submitted.')]);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('onboarding.journey');
     }
 }

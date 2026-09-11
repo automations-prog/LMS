@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $user_id
  * @property string $scenario_key
+ * @property string $vertical
  * @property string $status
  * @property array<int, array{role: string, text: string, at: string}>|null $transcript
  * @property array{criteria: array<int, array{key: string, label: string, score: int, feedback: string}>, overall_score: int, summary: string}|null $score
@@ -33,6 +34,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'user_id',
     'scenario_key',
+    'vertical',
     'status',
     'transcript',
     'score',

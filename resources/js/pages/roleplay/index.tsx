@@ -1,5 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { Lock, Mic, Phone } from 'lucide-react';
+import { Clock, Lock, Mic, Phone } from 'lucide-react';
 import RoleplayController from '@/actions/App/Http/Controllers/RoleplayController';
 import { DataPagination } from '@/components/data-pagination';
 import Heading from '@/components/heading';
@@ -31,11 +31,17 @@ const STATUS_BADGE_CLASSES: Record<RoleplaySessionStatus, string> = {
 
 type Props = {
     enabled: boolean;
-    scenario: { title: string; summary: string };
+    verticalAvailable: boolean;
+    scenario: { title: string; summary: string } | null;
     sessions: Paginator<RoleplaySession>;
 };
 
-export default function RoleplayIndex({ enabled, scenario, sessions }: Props) {
+export default function RoleplayIndex({
+    enabled,
+    verticalAvailable,
+    scenario,
+    sessions,
+}: Props) {
     return (
         <>
             <Head title="Sales Roleplay" />
@@ -48,27 +54,29 @@ export default function RoleplayIndex({ enabled, scenario, sessions }: Props) {
                 />
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle>{scenario.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                            {scenario.summary}
-                        </p>
-                    </CardHeader>
+                    {scenario && (
+                        <CardHeader>
+                            <CardTitle>{scenario.title}</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                {scenario.summary}
+                            </p>
+                        </CardHeader>
+                    )}
                     <CardContent>
-                        {enabled ? (
-                            <Form
-                                {...RoleplayController.store.form()}
-                            >
+                        {!verticalAvailable ? (
+                            <div className="flex items-start gap-3 rounded-md border border-dashed border-sidebar-border/70 p-4 text-sm text-muted-foreground dark:border-sidebar-border">
+                                <Clock className="mt-0.5 size-4 shrink-0" />
+                                <p>
+                                    Roleplay isn&apos;t available for your
+                                    segment yet — we&apos;re starting with
+                                    Medicare scripts and expanding from there.
+                                </p>
+                            </div>
+                        ) : enabled ? (
+                            <Form {...RoleplayController.store.form()}>
                                 {({ processing }) => (
-                                    <Button
-                                        type="submit"
-                                        disabled={processing}
-                                    >
-                                        {processing ? (
-                                            <Spinner />
-                                        ) : (
-                                            <Phone />
-                                        )}
+                                    <Button type="submit" disabled={processing}>
+                                        {processing ? <Spinner /> : <Phone />}
                                         Start roleplay call
                                     </Button>
                                 )}
@@ -77,9 +85,9 @@ export default function RoleplayIndex({ enabled, scenario, sessions }: Props) {
                             <div className="flex items-start gap-3 rounded-md border border-dashed border-sidebar-border/70 p-4 text-sm text-muted-foreground dark:border-sidebar-border">
                                 <Lock className="mt-0.5 size-4 shrink-0" />
                                 <p>
-                                    Roleplay access hasn&apos;t been enabled
-                                    for your account yet. Ask an admin to
-                                    turn it on for you.
+                                    Roleplay access hasn&apos;t been enabled for
+                                    your account yet. Ask an admin to turn it on
+                                    for you.
                                 </p>
                             </div>
                         )}
@@ -121,9 +129,7 @@ export default function RoleplayIndex({ enabled, scenario, sessions }: Props) {
                                                 {session.overall_score !==
                                                     null && (
                                                     <span className="text-sm font-semibold">
-                                                        {
-                                                            session.overall_score
-                                                        }
+                                                        {session.overall_score}
                                                         /100
                                                     </span>
                                                 )}

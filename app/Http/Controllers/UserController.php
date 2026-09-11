@@ -69,6 +69,7 @@ class UserController extends Controller
         return Inertia::render('users/index', [
             'users' => $users,
             'assignableRoles' => UserPolicy::assignableRoles($request->user()),
+            'agentTypes' => User::AGENT_TYPES,
             'filters' => [
                 'search' => $search,
                 'role' => $role,
@@ -129,6 +130,7 @@ class UserController extends Controller
             'password' => $isInvited ? 'password' : $validated['password'],
             'is_active' => ! $isInvited,
             'source' => User::SOURCE_MANUAL,
+            'agent_type' => $this->normalizeAgentType($validated['agent_type'] ?? null),
         ]);
 
         $user->syncRoles([$validated['role']]);
@@ -155,6 +157,7 @@ class UserController extends Controller
         $user->fill([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'agent_type' => $this->normalizeAgentType($validated['agent_type'] ?? null),
         ]);
 
         if (! empty($validated['password'])) {
@@ -318,6 +321,16 @@ class UserController extends Controller
         PullProgress::start($progressId);
 
         return $progressId;
+    }
+
+    /**
+     * The Segment select's "No segment" option submits the sentinel
+     * 'none' (Radix's Select can't submit an empty-string value) — map it
+     * back to null before it ever reaches the database.
+     */
+    private function normalizeAgentType(?string $agentType): ?string
+    {
+        return $agentType === 'none' ? null : $agentType;
     }
 
     /**

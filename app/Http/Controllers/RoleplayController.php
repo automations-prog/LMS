@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\ScoreRoleplaySessionJob;
 use App\Models\RoleplaySession;
 use App\Services\OpenAiClient;
+use App\Support\RoleplayVertical;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,12 +34,21 @@ class RoleplayController extends Controller
             ->latest()
             ->paginate(10);
 
+        $vertical = RoleplayVertical::forUser($user);
+        $verticalAvailable = RoleplayVertical::isAvailable($vertical);
+        $verticalConfig = $verticalAvailable ? RoleplayVertical::config($vertical) : null;
+
         return Inertia::render('roleplay/index', [
-            'enabled' => $user->hasRoleplayAccess(),
-            'scenario' => [
-                'title' => config('roleplay.scenario.title'),
-                'summary' => config('roleplay.scenario.summary'),
-            ],
+            // Access requires both: the vertical they'd practice actually
+            // has a script ready, and an admin has granted them access
+            // (individually and at the segment level — see
+            // User::hasRoleplayAccess).
+            'enabled' => $verticalAvailable && $user->hasRoleplayAccess(),
+            'verticalAvailable' => $verticalAvailable,
+            'scenario' => $verticalConfig ? [
+                'title' => $verticalConfig['scenario']['title'],
+                'summary' => $verticalConfig['scenario']['summary'],
+            ] : null,
             'sessions' => $sessions,
         ]);
     }
@@ -50,11 +60,22 @@ class RoleplayController extends Controller
     {
         abort_unless(config('roleplay.launched'), 404);
 
+        $user = $request->user();
+        $vertical = RoleplayVertical::forUser($user);
+        $verticalConfig = RoleplayVertical::config($vertical);
+
+        // The vertical is re-derived from the agent's current agent_type
+        // here, server-side — never trust a vertical the client might
+        // send — and re-checked for availability rather than relying on
+        // whatever the index page last rendered.
+        abort_unless($verticalConfig !== null && RoleplayVertical::isAvailable($vertical), 404);
+
         Gate::authorize('create', RoleplaySession::class);
 
         $session = RoleplaySession::create([
-            'user_id' => $request->user()->id,
-            'scenario_key' => config('roleplay.scenario.key'),
+            'user_id' => $user->id,
+            'scenario_key' => $verticalConfig['scenario']['key'],
+            'vertical' => $vertical,
             'status' => RoleplaySession::STATUS_IN_PROGRESS,
             'started_at' => now(),
         ]);
@@ -70,11 +91,15 @@ class RoleplayController extends Controller
     {
         Gate::authorize('view', $roleplaySession);
 
+        // The session's own vertical, not whatever the agent's agent_type
+        // maps to today — see the migration note on roleplay_sessions.vertical.
+        $verticalConfig = RoleplayVertical::config($roleplaySession->vertical);
+
         return Inertia::render('roleplay/show', [
             'session' => $roleplaySession,
             'scenario' => [
-                'title' => config('roleplay.scenario.title'),
-                'rubric' => config('roleplay.rubric'),
+                'title' => $verticalConfig['scenario']['title'] ?? null,
+                'rubric' => $verticalConfig['rubric'] ?? [],
             ],
             'isOwner' => $request->user()->id === $roleplaySession->user_id,
         ]);
@@ -90,9 +115,11 @@ class RoleplayController extends Controller
     {
         Gate::authorize('update', $roleplaySession);
 
+        $scenario = RoleplayVertical::config($roleplaySession->vertical)['scenario'];
+
         $secret = $client->mintRealtimeClientSecret(
-            config('roleplay.scenario.persona_instructions'),
-            config('roleplay.scenario.greeting'),
+            $scenario['persona_instructions'],
+            $scenario['greeting'],
         );
 
         return response()->json([

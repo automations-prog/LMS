@@ -1,9 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     LayoutGrid,
+    ListChecks,
     Lock,
     Mic,
     ShieldCheck,
+    ToggleLeft,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -19,7 +21,11 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { index as onboardingIndex } from '@/routes/onboarding';
+import { index as featuresIndex } from '@/routes/features';
+import {
+    index as onboardingIndex,
+    journey as onboardingJourneyIndex,
+} from '@/routes/onboarding';
 import { index as roleplayIndex } from '@/routes/roleplay';
 import { index as roleplayAccessIndex } from '@/routes/roleplay/access';
 import { index as rolesIndex } from '@/routes/roles';
@@ -27,8 +33,18 @@ import { index as usersIndex } from '@/routes/users';
 import type { Auth, NavItem } from '@/types';
 
 export function AppSidebar() {
-    const { auth } = usePage<{ auth: Auth }>().props;
+    const { auth, eligibilityStatus } = usePage<{ auth: Auth }>().props;
     const permissions = auth.user?.permissions ?? [];
+    const roles = auth.user?.roles ?? [];
+    const isAgent = roles.includes('agent');
+    // An agent whose eligibility hasn't been decided yet — no attestation
+    // at all, or still under review — hasn't unlocked anything else yet;
+    // hide the nav items that only make sense once it's decided. Doesn't
+    // apply to admins/super-admins, who never have an eligibility
+    // attestation of their own.
+    const hasAnsweredEligibility =
+        !isAgent ||
+        (eligibilityStatus !== null && eligibilityStatus !== 'under_review');
 
     const mainNavItems: NavItem[] = [
         {
@@ -36,11 +52,24 @@ export function AppSidebar() {
             href: dashboard(),
             icon: LayoutGrid,
         },
-        {
-            title: 'Sales Roleplay',
-            href: roleplayIndex(),
-            icon: Mic,
-        },
+        ...(isAgent && hasAnsweredEligibility
+            ? [
+                  {
+                      title: 'My Onboarding',
+                      href: onboardingJourneyIndex(),
+                      icon: ListChecks,
+                  },
+              ]
+            : []),
+        ...(hasAnsweredEligibility
+            ? [
+                  {
+                      title: 'Sales Roleplay',
+                      href: roleplayIndex(),
+                      icon: Mic,
+                  },
+              ]
+            : []),
         ...(permissions.includes('roleplay.manage')
             ? [
                   {
@@ -65,6 +94,15 @@ export function AppSidebar() {
                       title: 'Roles & Permissions',
                       href: rolesIndex(),
                       icon: Lock,
+                  },
+              ]
+            : []),
+        ...(permissions.includes('features.manage')
+            ? [
+                  {
+                      title: 'Feature Access',
+                      href: featuresIndex(),
+                      icon: ToggleLeft,
                   },
               ]
             : []),

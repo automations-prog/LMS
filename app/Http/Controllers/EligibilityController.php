@@ -29,7 +29,7 @@ class EligibilityController extends Controller
         if ($attestation) {
             return redirect(in_array($attestation->status, EligibilityAttestation::UNDER_REVIEW_STATUSES, true)
                 ? route('eligibility.pending')
-                : route('dashboard'));
+                : route('onboarding.journey'));
         }
 
         return Inertia::render('onboarding/eligibility', [
@@ -75,7 +75,7 @@ class EligibilityController extends Controller
         $attestation = $request->user()->eligibilityAttestation;
 
         if (! $attestation || ! in_array($attestation->status, EligibilityAttestation::UNDER_REVIEW_STATUSES, true)) {
-            return redirect()->route('dashboard');
+            return redirect()->route('onboarding.journey');
         }
 
         return Inertia::render('onboarding/pending-review');
@@ -101,7 +101,7 @@ class EligibilityController extends Controller
             'line_of_authority' => $validated['line_of_authority'],
         ]);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('onboarding.journey');
     }
 
     /**
@@ -124,7 +124,7 @@ class EligibilityController extends Controller
             'proctoring_type' => $validated['proctoring_type'],
         ]);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('onboarding.journey');
     }
 
     /**
@@ -140,7 +140,7 @@ class EligibilityController extends Controller
 
         $attestation->update(['fingerprinting_completed_at' => now()]);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('onboarding.journey');
     }
 
     /**
@@ -156,6 +156,6 @@ class EligibilityController extends Controller
 
         $attestation->update(['license_application_submitted_at' => now()]);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('onboarding.journey');
     }
 }

@@ -33,6 +33,9 @@ class UpdateUserRequest extends FormRequest
             ...$this->profileRules($this->route('user')->id),
             'password' => ['nullable', 'string', Password::default()],
             'role' => ['required', 'string', Rule::in(UserPolicy::assignableRoles($this->user()))],
+            // 'none' is the Select's explicit "no segment" option — see
+            // StoreUserRequest for why.
+            'agent_type' => ['nullable', 'string', Rule::in([...array_keys(User::AGENT_TYPES), 'none'])],
         ];
     }
 }

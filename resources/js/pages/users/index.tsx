@@ -83,14 +83,19 @@ type UserRow = {
     is_active: boolean;
     last_login_at: string | null;
     source: string | null;
+    agent_type: string | null;
     company_name: string | null;
     roles: { id: number; name: string }[];
 };
 
-// Filterable in the dropdown below — 'manual' and 'customer_api' are still
-// shown as labels in the table (via SOURCE_LABELS), just not offered as a
-// filter option.
-const ALL_SOURCES = ['pitch_health', 'pitch_perfect', 'self_registered'];
+// Filterable in the dropdown below — 'manual' is still shown as a label in
+// the table (via SOURCE_LABELS), just not offered as a filter option.
+const ALL_SOURCES = [
+    'customer_api',
+    'pitch_health',
+    'pitch_perfect',
+    'self_registered',
+];
 
 type Counts = {
     total: number;
@@ -109,6 +114,7 @@ type Filters = {
 type Props = {
     users: Paginator<UserRow>;
     assignableRoles: string[];
+    agentTypes: Record<string, string>;
     filters: Filters;
     counts: Counts;
 };
@@ -155,6 +161,36 @@ function RoleSelect({
     );
 }
 
+function AgentTypeSelect({
+    agentTypes,
+    defaultValue,
+    error,
+}: {
+    agentTypes: Record<string, string>;
+    defaultValue?: string | null;
+    error?: string;
+}) {
+    return (
+        <div className="grid gap-2">
+            <Label htmlFor="agent_type">Segment</Label>
+            <Select name="agent_type" defaultValue={defaultValue ?? 'none'}>
+                <SelectTrigger id="agent_type" className="w-full">
+                    <SelectValue placeholder="No segment" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="none">No segment</SelectItem>
+                    {Object.entries(agentTypes).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                            {label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <InputError message={error} />
+        </div>
+    );
+}
+
 // Agents are invited via a signed "set your password" email and never have a
 // password collected here; admins/super admins are created directly and need
 // one set up front.
@@ -174,6 +210,7 @@ function applyFilters(overrides: Partial<Filters>, filters: Filters) {
 export default function UsersIndex({
     users,
     assignableRoles,
+    agentTypes,
     filters,
     counts,
 }: Props) {
@@ -397,6 +434,17 @@ export default function UsersIndex({
                                                         }
                                                         error={errors.role}
                                                     />
+
+                                                    {createRole === 'agent' && (
+                                                        <AgentTypeSelect
+                                                            agentTypes={
+                                                                agentTypes
+                                                            }
+                                                            error={
+                                                                errors.agent_type
+                                                            }
+                                                        />
+                                                    )}
 
                                                     {ROLES_REQUIRING_PASSWORD.includes(
                                                         createRole,
@@ -910,6 +958,9 @@ export default function UsersIndex({
                                     Source
                                 </th>
                                 <th className="px-4 py-3 font-medium">
+                                    Segment
+                                </th>
+                                <th className="px-4 py-3 font-medium">
                                     Company
                                 </th>
                                 <th className="px-4 py-3 font-medium">
@@ -1036,6 +1087,13 @@ export default function UsersIndex({
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {formatSource(user.source)}
+                                        </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
+                                            {user.agent_type
+                                                ? (agentTypes[
+                                                      user.agent_type
+                                                  ] ?? user.agent_type)
+                                                : '—'}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {user.company_name ?? '—'}
@@ -1258,6 +1316,18 @@ export default function UsersIndex({
                                                                             errors.role
                                                                         }
                                                                     />
+
+                                                                    <AgentTypeSelect
+                                                                        agentTypes={
+                                                                            agentTypes
+                                                                        }
+                                                                        defaultValue={
+                                                                            user.agent_type
+                                                                        }
+                                                                        error={
+                                                                            errors.agent_type
+                                                                        }
+                                                                    />
                                                                 </div>
 
                                                                 <SheetFooter className="flex-row justify-end gap-2 border-t">
@@ -1405,7 +1475,7 @@ export default function UsersIndex({
                             {users.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={9}
+                                        colSpan={10}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
                                         No users found.

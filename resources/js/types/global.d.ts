@@ -15,6 +15,8 @@ declare module '@inertiajs/core' {
             auth: Auth;
             sidebarOpen: boolean;
             notifications: NotificationFeed | null;
+            eligibilityStatus:
+                'under_review' | 'cleared' | 'not_eligible' | null;
             [key: string]: unknown;
         };
     }

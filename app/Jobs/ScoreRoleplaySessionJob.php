@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\RoleplaySession;
 use App\Notifications\RoleplaySessionScoredNotification;
 use App\Services\OpenAiClient;
+use App\Support\RoleplayVertical;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -31,7 +32,9 @@ class ScoreRoleplaySessionJob implements ShouldQueue
             return;
         }
 
-        $score = $client->scoreTranscript($this->session->transcript, config('roleplay.rubric'));
+        $rubric = RoleplayVertical::config($this->session->vertical)['rubric'];
+
+        $score = $client->scoreTranscript($this->session->transcript, $rubric);
 
         $this->session->update([
             'status' => RoleplaySession::STATUS_SCORED,

@@ -100,6 +100,58 @@ test('admin can create an agent but not an admin', function () {
         ->assertSessionHasErrors('role');
 });
 
+test('an agent can be created with a segment', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->post(route('users.store'), [
+            'name' => 'New Agent',
+            'email' => 'segmented-agent@example.com',
+            'role' => 'agent',
+            'agent_type' => 'medicare_agent',
+        ])
+        ->assertRedirect();
+
+    expect(User::whereEmail('segmented-agent@example.com')->first()->agent_type)
+        ->toBe('medicare_agent');
+});
+
+test('a user\'s segment can be cleared back to none', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $agent = User::factory()->create(['agent_type' => 'fronter']);
+    $agent->assignRole('agent');
+
+    $this->actingAs($admin)
+        ->put(route('users.update', $agent), [
+            'name' => $agent->name,
+            'email' => $agent->email,
+            'role' => 'agent',
+            'agent_type' => 'none',
+        ])
+        ->assertRedirect();
+
+    expect($agent->fresh()->agent_type)->toBeNull();
+});
+
+test('an invalid segment is rejected', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->post(route('users.store'), [
+            'name' => 'New Agent',
+            'email' => 'bad-segment@example.com',
+            'role' => 'agent',
+            'agent_type' => 'not-a-real-segment',
+        ])
+        ->assertSessionHasErrors('agent_type');
+});
+
 test('admin cannot update another admin', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');

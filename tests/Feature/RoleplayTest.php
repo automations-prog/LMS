@@ -5,6 +5,8 @@ use App\Models\RoleplaySession;
 use App\Models\User;
 use App\Notifications\RoleplaySessionScoredNotification;
 use App\Services\OpenAiClient;
+use App\Support\FeatureAccess;
+use App\Support\RoleplayVertical;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Notification;
@@ -38,6 +40,63 @@ test('starting a session is blocked while unlaunched even with access granted', 
         ->assertNotFound();
 
     expect(RoleplaySession::count())->toBe(0);
+});
+
+test('an agent mapped to an unavailable vertical sees no scenario and cannot start a session', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $agent->update(['roleplay_enabled_at' => now(), 'agent_type' => 'aca_agent']);
+
+    $this->actingAs($agent)
+        ->get(route('roleplay.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('roleplay/index')
+            ->where('enabled', false)
+            ->where('verticalAvailable', false)
+            ->where('scenario', null));
+
+    $this->actingAs($agent)
+        ->post(route('roleplay.sessions.store'))
+        ->assertNotFound();
+
+    expect(RoleplaySession::count())->toBe(0);
+});
+
+test('a medicare agent is mapped to the medicare vertical and can start a session', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $agent->update(['roleplay_enabled_at' => now(), 'agent_type' => 'medicare_agent']);
+
+    $this->actingAs($agent)
+        ->post(route('roleplay.sessions.store'))
+        ->assertRedirect();
+
+    expect(RoleplaySession::first()->vertical)->toBe('medicare');
+});
+
+test('an agent with no segment defaults to the medicare vertical', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $agent->update(['roleplay_enabled_at' => now()]);
+
+    expect(RoleplayVertical::forUser($agent->fresh()))->toBe('medicare');
+});
+
+test('turning roleplay off for a segment blocks every agent in it, even with individual access granted', function () {
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $agent->update(['roleplay_enabled_at' => now(), 'agent_type' => 'pre_licensee']);
+
+    expect($agent->fresh()->hasRoleplayAccess())->toBeTrue();
+
+    FeatureAccess::setEnabled('pre_licensee', 'roleplay', false);
+
+    expect($agent->fresh()->hasRoleplayAccess())->toBeFalse();
+
+    $this->actingAs($agent->fresh())
+        ->post(route('roleplay.sessions.store'))
+        ->assertForbidden();
 });
 
 test('an agent without granted access cannot start a session', function () {
@@ -190,7 +249,7 @@ test('scoring a session records the score and notifies the agent', function () {
         $mock->shouldReceive('scoreTranscript')
             ->once()
             ->andReturn([
-                'criteria' => collect(config('roleplay.rubric'))
+                'criteria' => collect(RoleplayVertical::config('medicare')['rubric'])
                     ->map(fn (array $criterion) => [
                         'key' => $criterion['key'],
                         'score' => 3,

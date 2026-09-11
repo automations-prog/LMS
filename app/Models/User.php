@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\FeatureAccess;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -28,6 +29,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $excel_id
  * @property array<string, mixed>|null $metadata
  * @property string|null $source
+ * @property string|null $agent_type
  * @property string|null $company_name
  * @property Carbon|null $roleplay_enabled_at
  * @property int|null $roleplay_enabled_by
@@ -41,7 +43,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'source', 'company_name', 'is_active', 'must_change_password', 'roleplay_enabled_at', 'roleplay_enabled_by'])]
+#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'source', 'agent_type', 'company_name', 'is_active', 'must_change_password', 'roleplay_enabled_at', 'roleplay_enabled_by'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -64,6 +66,22 @@ class User extends Authenticatable implements PasskeyUser
     public const SOURCE_SELF_REGISTERED = 'self_registered';
 
     /**
+     * Agent segments — separate from the agent/admin/super-admin auth
+     * role. Drives per-segment feature toggles (App\Support\FeatureAccess)
+     * and which roleplay vertical/script an agent practices against (see
+     * App\Support\RoleplayVertical). Keyed by the value stored in
+     * `agent_type`, valued by the admin-facing label.
+     *
+     * @var array<string, string>
+     */
+    public const AGENT_TYPES = [
+        'pre_licensee' => 'Pre-licensee',
+        'fronter' => 'Fronter',
+        'medicare_agent' => 'Medicare agent',
+        'aca_agent' => 'ACA agent',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -84,11 +102,14 @@ class User extends Authenticatable implements PasskeyUser
 
     /**
      * Whether an admin has granted this user access to the sales roleplay
-     * feature.
+     * feature — both individually (roleplay_enabled_at) and at the
+     * segment level (FeatureAccess, e.g. an admin turning roleplay off for
+     * every pre-licensee at once).
      */
     public function hasRoleplayAccess(): bool
     {
-        return $this->roleplay_enabled_at !== null;
+        return $this->roleplay_enabled_at !== null
+            && FeatureAccess::enabledFor($this, 'roleplay');
     }
 
     /**
@@ -97,6 +118,23 @@ class User extends Authenticatable implements PasskeyUser
     public function eligibilityAttestation(): HasOne
     {
         return $this->hasOne(EligibilityAttestation::class);
+    }
+
+    /**
+     * The agent-facing eligibility status — collapses the two "not yet
+     * decided" statuses (pending, flagged for waiver) into one
+     * 'under_review' the frontend doesn't need to distinguish between, and
+     * is null before an attestation exists at all. Shared by the dashboard
+     * (DashboardController), the onboarding journey page, and the sidebar
+     * (HandleInertiaRequests, to hide nav items until this is decided).
+     */
+    public function eligibilityDisplayStatus(): ?string
+    {
+        $status = $this->eligibilityAttestation?->status;
+
+        return in_array($status, EligibilityAttestation::UNDER_REVIEW_STATUSES, true)
+            ? 'under_review'
+            : $status;
     }
 
     /**

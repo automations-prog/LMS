@@ -44,6 +44,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'agents.view',
             'roles.manage',
             'roleplay.manage',
+            'features.manage',
         ];
 
         foreach ($permissions as $permission) {

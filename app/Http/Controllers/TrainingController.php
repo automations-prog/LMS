@@ -43,6 +43,6 @@ class TrainingController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Certificate submitted.')]);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('onboarding.journey');
     }
 }
