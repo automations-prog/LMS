@@ -4,6 +4,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Launched
+    |--------------------------------------------------------------------------
+    |
+    | The agent-facing "Sales Roleplay" entry point (RoleplayController)
+    | shows a "Coming Soon" landing page instead of the real call/scenario
+    | UI while this is false — the feature, its per-agent access toggle,
+    | and the admin Roleplay Coaching page all still work underneath, this
+    | just hides the front door until it's ready to launch.
+    */
+    'launched' => env('ROLEPLAY_LAUNCHED', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Sales Roleplay
     |--------------------------------------------------------------------------
     |

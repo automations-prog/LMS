@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { GraduationCap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
@@ -41,19 +42,24 @@ export default function AuthSimpleLayout({
                                 href={home()}
                                 className="flex flex-col items-center gap-2 font-medium"
                             >
-                                <div className="mb-1">
-                                    <img
-                                        src="/images/logo_black_text.png"
-                                        alt="PitchHealth Solutions"
-                                        className="h-8 w-auto object-contain dark:hidden"
-                                    />
-                                    <img
-                                        src="/images/logo.webp"
-                                        alt="PitchHealth Solutions"
-                                        className="hidden h-8 w-auto object-contain dark:block"
-                                    />
+                                <div
+                                    className="mb-1 flex size-12 items-center justify-center rounded-2xl shadow-lg"
+                                    style={{
+                                        background:
+                                            'linear-gradient(135deg, #473364 0%, #5a4177 60%, #8a5fae 100%)',
+                                    }}
+                                >
+                                    <GraduationCap className="size-6 text-white" />
                                 </div>
-                                <span className="sr-only">{title}</span>
+                                <span
+                                    className="bg-clip-text text-lg font-extrabold text-transparent"
+                                    style={{
+                                        backgroundImage:
+                                            'linear-gradient(135deg, #473364, #8a5fae 60%, #f598ff)',
+                                    }}
+                                >
+                                    Pitch University
+                                </span>
                             </Link>
 
                             <div className="space-y-2 text-center">

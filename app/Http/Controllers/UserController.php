@@ -11,9 +11,12 @@ use App\Models\User;
 use App\Notifications\AccountApprovedNotification;
 use App\Notifications\AgentInviteNotification;
 use App\Policies\UserPolicy;
+use App\Support\PullProgress;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -233,7 +236,9 @@ class UserController extends Controller
     {
         Gate::authorize('create', User::class);
 
-        PullAgentsFromCustomerApiJob::dispatch($request->user());
+        $progressId = $this->startPullProgress($request);
+
+        PullAgentsFromCustomerApiJob::dispatch($request->user(), $progressId);
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -252,7 +257,9 @@ class UserController extends Controller
     {
         Gate::authorize('create', User::class);
 
-        PullPitchHealthFromAirtableJob::dispatch($request->user());
+        $progressId = $this->startPullProgress($request);
+
+        PullPitchHealthFromAirtableJob::dispatch($request->user(), $progressId);
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -271,7 +278,9 @@ class UserController extends Controller
     {
         Gate::authorize('create', User::class);
 
-        PullPitchPerfectFromAirtableJob::dispatch($request->user());
+        $progressId = $this->startPullProgress($request);
+
+        PullPitchPerfectFromAirtableJob::dispatch($request->user(), $progressId);
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -279,6 +288,36 @@ class UserController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Report how far a previously-started pull (agents, Pitch Health, or
+     * PitchPerfect) has gotten, so the dialog that started it can render a
+     * progress bar instead of just waiting on a notification.
+     */
+    public function pullStatus(Request $request, string $progressId): JsonResponse
+    {
+        Gate::authorize('create', User::class);
+
+        return response()->json(PullProgress::status($progressId));
+    }
+
+    /**
+     * Register a progress id — supplied by the frontend so it can start
+     * polling immediately, before the redirect back even completes — with
+     * PullProgress, and hand it to the caller to pass along to the job.
+     */
+    private function startPullProgress(Request $request): string
+    {
+        $progressId = $request->string('progress_id')->toString();
+
+        if (! Str::isUuid($progressId)) {
+            $progressId = (string) Str::uuid();
+        }
+
+        PullProgress::start($progressId);
+
+        return $progressId;
     }
 
     /**

@@ -20,6 +20,7 @@ import { DataPagination } from '@/components/data-pagination';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import { PullProgressBar } from '@/components/pull-progress-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -61,6 +62,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { usePullProgress } from '@/hooks/use-pull-progress';
 import { brandButtonClass } from '@/lib/brand-theme';
 import {
     formatLastLogin,
@@ -181,8 +183,17 @@ export default function UsersIndex({
 
     const [createOpen, setCreateOpen] = useState(false);
     const [createRole, setCreateRole] = useState(assignableRoles[0]);
+    const [pullAgentsOpen, setPullAgentsOpen] = useState(false);
     const [pullPitchHealthOpen, setPullPitchHealthOpen] = useState(false);
     const [pullPitchPerfectOpen, setPullPitchPerfectOpen] = useState(false);
+    const pullAgentsProgress = usePullProgress();
+    const [pullAgentsProgressId, setPullAgentsProgressId] = useState('');
+    const pullPitchHealthProgress = usePullProgress();
+    const [pullPitchHealthProgressId, setPullPitchHealthProgressId] =
+        useState('');
+    const pullPitchPerfectProgress = usePullProgress();
+    const [pullPitchPerfectProgressId, setPullPitchPerfectProgressId] =
+        useState('');
     const [editingUserId, setEditingUserId] = useState<number | null>(null);
     const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
     const [suspendingUserId, setSuspendingUserId] = useState<number | null>(
@@ -262,7 +273,25 @@ export default function UsersIndex({
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="secondary"
-                                onClick={() => setPullPitchHealthOpen(true)}
+                                onClick={() => {
+                                    setPullAgentsProgressId(
+                                        pullAgentsProgress.startId(),
+                                    );
+                                    setPullAgentsOpen(true);
+                                }}
+                            >
+                                <Download className="size-4" />
+                                Pull Xcel Students
+                            </Button>
+
+                            <Button
+                                variant="secondary"
+                                onClick={() => {
+                                    setPullPitchHealthProgressId(
+                                        pullPitchHealthProgress.startId(),
+                                    );
+                                    setPullPitchHealthOpen(true);
+                                }}
                             >
                                 <Download className="size-4" />
                                 Pull Pitch Health
@@ -270,7 +299,12 @@ export default function UsersIndex({
 
                             <Button
                                 variant="secondary"
-                                onClick={() => setPullPitchPerfectOpen(true)}
+                                onClick={() => {
+                                    setPullPitchPerfectProgressId(
+                                        pullPitchPerfectProgress.startId(),
+                                    );
+                                    setPullPitchPerfectOpen(true);
+                                }}
                             >
                                 <Download className="size-4" />
                                 Pull PitchPerfect
@@ -518,71 +552,241 @@ export default function UsersIndex({
                 )}
 
                 <Dialog
+                    open={pullAgentsOpen}
+                    onOpenChange={(open) => {
+                        setPullAgentsOpen(open);
+
+                        if (!open) {
+                            pullAgentsProgress.reset();
+                        }
+                    }}
+                >
+                    <DialogContent>
+                        <DialogTitle>Pull Xcel Students?</DialogTitle>
+
+                        {pullAgentsProgress.isActive ? (
+                            <>
+                                <PullProgressBar
+                                    status={pullAgentsProgress.status}
+                                />
+                                <DialogFooter className="gap-2">
+                                    <Button
+                                        disabled={
+                                            pullAgentsProgress.status.status !==
+                                            'finished'
+                                        }
+                                        onClick={() => {
+                                            setPullAgentsOpen(false);
+                                            pullAgentsProgress.reset();
+                                            router.reload({
+                                                only: ['users', 'counts'],
+                                            });
+                                        }}
+                                    >
+                                        Close
+                                    </Button>
+                                </DialogFooter>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm text-muted-foreground">
+                                    This will fetch the latest agents from the
+                                    training provider and create an account for
+                                    each one not already registered. Existing
+                                    emails are skipped.
+                                </p>
+
+                                <Form
+                                    {...UserController.pullAgents.form()}
+                                    transform={(data) => ({
+                                        ...data,
+                                        progress_id: pullAgentsProgressId,
+                                    })}
+                                    onSuccess={() =>
+                                        pullAgentsProgress.poll(
+                                            pullAgentsProgressId,
+                                        )
+                                    }
+                                >
+                                    {({ processing }) => (
+                                        <DialogFooter className="gap-2">
+                                            <DialogClose asChild>
+                                                <Button variant="secondary">
+                                                    Cancel
+                                                </Button>
+                                            </DialogClose>
+                                            <Button
+                                                type="submit"
+                                                disabled={processing}
+                                            >
+                                                {processing && <Spinner />}
+                                                Pull agents
+                                            </Button>
+                                        </DialogFooter>
+                                    )}
+                                </Form>
+                            </>
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog
                     open={pullPitchHealthOpen}
-                    onOpenChange={setPullPitchHealthOpen}
+                    onOpenChange={(open) => {
+                        setPullPitchHealthOpen(open);
+
+                        if (!open) {
+                            pullPitchHealthProgress.reset();
+                        }
+                    }}
                 >
                     <DialogContent>
                         <DialogTitle>Pull Pitch Health data?</DialogTitle>
-                        <p className="text-sm text-muted-foreground">
-                            This will fetch the latest Pitch Health
-                            submissions from Airtable, save them, and create
-                            an active account with the default password for
-                            each submitted email not already registered.
-                        </p>
 
-                        <Form
-                            {...UserController.pullPitchHealth.form()}
-                            onSuccess={() => setPullPitchHealthOpen(false)}
-                        >
-                            {({ processing }) => (
+                        {pullPitchHealthProgress.isActive ? (
+                            <>
+                                <PullProgressBar
+                                    status={pullPitchHealthProgress.status}
+                                />
                                 <DialogFooter className="gap-2">
-                                    <DialogClose asChild>
-                                        <Button variant="secondary">
-                                            Cancel
-                                        </Button>
-                                    </DialogClose>
-                                    <Button type="submit" disabled={processing}>
-                                        {processing && <Spinner />}
-                                        Pull Pitch Health
+                                    <Button
+                                        disabled={
+                                            pullPitchHealthProgress.status
+                                                .status !== 'finished'
+                                        }
+                                        onClick={() => {
+                                            setPullPitchHealthOpen(false);
+                                            pullPitchHealthProgress.reset();
+                                            router.reload({
+                                                only: ['users', 'counts'],
+                                            });
+                                        }}
+                                    >
+                                        Close
                                     </Button>
                                 </DialogFooter>
-                            )}
-                        </Form>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm text-muted-foreground">
+                                    This will fetch the latest Pitch Health
+                                    submissions from Airtable, save them, and
+                                    create an active account with the default
+                                    password for each submitted email not
+                                    already registered.
+                                </p>
+
+                                <Form
+                                    {...UserController.pullPitchHealth.form()}
+                                    transform={(data) => ({
+                                        ...data,
+                                        progress_id: pullPitchHealthProgressId,
+                                    })}
+                                    onSuccess={() =>
+                                        pullPitchHealthProgress.poll(
+                                            pullPitchHealthProgressId,
+                                        )
+                                    }
+                                >
+                                    {({ processing }) => (
+                                        <DialogFooter className="gap-2">
+                                            <DialogClose asChild>
+                                                <Button variant="secondary">
+                                                    Cancel
+                                                </Button>
+                                            </DialogClose>
+                                            <Button
+                                                type="submit"
+                                                disabled={processing}
+                                            >
+                                                {processing && <Spinner />}
+                                                Pull Pitch Health
+                                            </Button>
+                                        </DialogFooter>
+                                    )}
+                                </Form>
+                            </>
+                        )}
                     </DialogContent>
                 </Dialog>
 
                 <Dialog
                     open={pullPitchPerfectOpen}
-                    onOpenChange={setPullPitchPerfectOpen}
+                    onOpenChange={(open) => {
+                        setPullPitchPerfectOpen(open);
+
+                        if (!open) {
+                            pullPitchPerfectProgress.reset();
+                        }
+                    }}
                 >
                     <DialogContent>
                         <DialogTitle>Pull PitchPerfect data?</DialogTitle>
-                        <p className="text-sm text-muted-foreground">
-                            This will fetch the latest PitchPerfect
-                            submissions from Airtable, save them, and create
-                            an active account with the default password for
-                            each submitted email marked Active that isn't
-                            already registered.
-                        </p>
 
-                        <Form
-                            {...UserController.pullPitchPerfect.form()}
-                            onSuccess={() => setPullPitchPerfectOpen(false)}
-                        >
-                            {({ processing }) => (
+                        {pullPitchPerfectProgress.isActive ? (
+                            <>
+                                <PullProgressBar
+                                    status={pullPitchPerfectProgress.status}
+                                />
                                 <DialogFooter className="gap-2">
-                                    <DialogClose asChild>
-                                        <Button variant="secondary">
-                                            Cancel
-                                        </Button>
-                                    </DialogClose>
-                                    <Button type="submit" disabled={processing}>
-                                        {processing && <Spinner />}
-                                        Pull PitchPerfect
+                                    <Button
+                                        disabled={
+                                            pullPitchPerfectProgress.status
+                                                .status !== 'finished'
+                                        }
+                                        onClick={() => {
+                                            setPullPitchPerfectOpen(false);
+                                            pullPitchPerfectProgress.reset();
+                                            router.reload({
+                                                only: ['users', 'counts'],
+                                            });
+                                        }}
+                                    >
+                                        Close
                                     </Button>
                                 </DialogFooter>
-                            )}
-                        </Form>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm text-muted-foreground">
+                                    This will fetch the latest PitchPerfect
+                                    submissions from Airtable, save them, and
+                                    create an active account with the default
+                                    password for each submitted email marked
+                                    Active that isn't already registered.
+                                </p>
+
+                                <Form
+                                    {...UserController.pullPitchPerfect.form()}
+                                    transform={(data) => ({
+                                        ...data,
+                                        progress_id: pullPitchPerfectProgressId,
+                                    })}
+                                    onSuccess={() =>
+                                        pullPitchPerfectProgress.poll(
+                                            pullPitchPerfectProgressId,
+                                        )
+                                    }
+                                >
+                                    {({ processing }) => (
+                                        <DialogFooter className="gap-2">
+                                            <DialogClose asChild>
+                                                <Button variant="secondary">
+                                                    Cancel
+                                                </Button>
+                                            </DialogClose>
+                                            <Button
+                                                type="submit"
+                                                disabled={processing}
+                                            >
+                                                {processing && <Spinner />}
+                                                Pull PitchPerfect
+                                            </Button>
+                                        </DialogFooter>
+                                    )}
+                                </Form>
+                            </>
+                        )}
                     </DialogContent>
                 </Dialog>
 

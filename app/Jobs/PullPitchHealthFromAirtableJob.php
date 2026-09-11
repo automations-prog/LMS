@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\User;
 use App\Notifications\PitchHealthSyncCompletedNotification;
 use App\Services\AirtableClient;
+use App\Support\PullProgress;
 use Illuminate\Bus\Batch;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -36,9 +37,14 @@ class PullPitchHealthFromAirtableJob implements ShouldQueue
      * @param  User|null  $triggeredBy  The admin who clicked "Pull Pitch
      *                                  Health", or null when the nightly
      *                                  schedule ran this instead of a person.
+     * @param  string|null  $progressId  The id the "Pull Pitch Health"
+     *                                   dialog is polling for a progress
+     *                                   bar, or null when nothing is
+     *                                   watching (the nightly schedule).
      */
     public function __construct(
         private readonly ?User $triggeredBy = null,
+        private readonly ?string $progressId = null,
     ) {}
 
     /**
@@ -58,8 +64,11 @@ class PullPitchHealthFromAirtableJob implements ShouldQueue
         $triggeredBy = $this->triggeredBy;
 
         if ($records === []) {
+            if ($this->progressId) {
+                PullProgress::finish($this->progressId);
+            }
+
             self::notifyResult($triggeredBy, $synced, $created);
-            LinkPitchHealthUsersToXcelJob::dispatch();
 
             return;
         }
@@ -69,18 +78,21 @@ class PullPitchHealthFromAirtableJob implements ShouldQueue
             ->map(fn ($chunk) => new SyncPitchHealthRecordsBatchJob($chunk->values()->all()))
             ->all();
 
-        Bus::batch($jobs)
+        $batch = Bus::batch($jobs)
             ->name('pitch-health-sync')
             ->allowFailures()
             ->finally(function (Batch $batch) use ($triggeredBy, $synced, $created) {
                 self::notifyResult($triggeredBy, $synced, $created);
-                // Try to link any newly-created (or still-unmatched) Pitch
-                // Health users to their XCEL record now that the accounts
-                // exist — the nightly schedule catches anyone XCEL didn't
-                // have yet at pull time.
-                LinkPitchHealthUsersToXcelJob::dispatch();
+                // Linking newly-created Pitch Health users to their XCEL
+                // record no longer happens right after the pull — disabled
+                // for now, see LinkPitchHealthUsersToXcelJob. The nightly
+                // schedule (routes/console.php) still runs it separately.
             })
             ->dispatch();
+
+        if ($this->progressId) {
+            PullProgress::attach($this->progressId, $batch);
+        }
     }
 
     /**

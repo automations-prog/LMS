@@ -11,6 +11,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     $this->seed(RolesAndPermissionsSeeder::class);
@@ -256,6 +257,51 @@ test('clicking pull agents notifies the clicking admin with exactly how many wer
     );
 });
 
+test('a progress id sent with pull agents can be polled for status once the pull finishes', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    config([
+        'services.customer_api.domain' => 'https://api.test',
+        'services.customer_api.key' => 'test-key',
+        'services.customer_api.location_id' => '123',
+    ]);
+
+    Http::fake([
+        'api.test/*' => Http::response([
+            'pagedResults' => ['pageNumber' => 1, 'pageSize' => 50, 'pagesCount' => 1, 'resultsCount' => 1],
+            'students' => [
+                ['id' => 'ext-1', 'email' => 'progress.agent@example.com', 'firstName' => 'Progress', 'lastName' => 'Agent'],
+            ],
+        ]),
+    ]);
+
+    $progressId = (string) Str::uuid();
+
+    $this->actingAs($admin)
+        ->post(route('users.pull-agents'), ['progress_id' => $progressId])
+        ->assertRedirect();
+
+    // The test queue connection runs jobs synchronously, so by the time
+    // the redirect comes back the whole batch has already finished.
+    $this->actingAs($admin)
+        ->getJson(route('users.pull-status', $progressId))
+        ->assertOk()
+        ->assertJson(['status' => 'finished', 'progress' => 100]);
+});
+
+test('polling an unknown or expired progress id reports finished rather than hanging', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->getJson(route('users.pull-status', (string) Str::uuid()))
+        ->assertOk()
+        ->assertJson(['status' => 'finished', 'progress' => 100]);
+});
+
 test('clicking pull pitch health notifies the clicking admin with exactly how many were synced', function () {
     Notification::fake();
 
@@ -266,11 +312,6 @@ test('clicking pull pitch health notifies the clicking admin with exactly how ma
         'services.airtable.token' => 'test-token',
         'services.airtable.pitch_health_base_id' => 'appTest',
         'services.airtable.pitch_health_table_id' => 'tblTest',
-        // The pull chains a LinkPitchHealthUsersToXcelJob afterwards —
-        // without this, its Customer API call would go out for real.
-        'services.customer_api.domain' => 'https://api.customer-test',
-        'services.customer_api.key' => 'test-key',
-        'services.customer_api.location_id' => '123',
     ]);
 
     Http::fake([
@@ -283,7 +324,6 @@ test('clicking pull pitch health notifies the clicking admin with exactly how ma
                 ],
             ],
         ]),
-        'api.customer-test/*' => Http::response(['students' => []]),
     ]);
 
     $this->actingAs($admin)

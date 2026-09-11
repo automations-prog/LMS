@@ -1,7 +1,7 @@
 <?php
 
-test('redirects to the login page', function () {
-    $response = $this->get(route('home'));
-
-    $response->assertRedirect(route('login'));
+test('the home route shows the welcome page', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('welcome'));
 });

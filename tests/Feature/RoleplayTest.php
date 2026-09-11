@@ -13,6 +13,33 @@ beforeEach(function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 });
 
+test('the roleplay index shows a coming soon page while unlaunched, regardless of access', function () {
+    config(['roleplay.launched' => false]);
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $agent->update(['roleplay_enabled_at' => now()]);
+
+    $this->actingAs($agent)
+        ->get(route('roleplay.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('roleplay/coming-soon'));
+});
+
+test('starting a session is blocked while unlaunched even with access granted', function () {
+    config(['roleplay.launched' => false]);
+
+    $agent = User::factory()->create();
+    $agent->assignRole('agent');
+    $agent->update(['roleplay_enabled_at' => now()]);
+
+    $this->actingAs($agent)
+        ->post(route('roleplay.sessions.store'))
+        ->assertNotFound();
+
+    expect(RoleplaySession::count())->toBe(0);
+});
+
 test('an agent without granted access cannot start a session', function () {
     $agent = User::factory()->create();
     $agent->assignRole('agent');

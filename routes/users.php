@@ -17,6 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('users/pull-agents', [UserController::class, 'pullAgents'])->name('users.pull-agents');
     Route::post('users/pull-pitch-health', [UserController::class, 'pullPitchHealth'])->name('users.pull-pitch-health');
     Route::post('users/pull-pitch-perfect', [UserController::class, 'pullPitchPerfect'])->name('users.pull-pitch-perfect');
+    Route::get('users/pull-status/{progressId}', [UserController::class, 'pullStatus'])->name('users.pull-status');
 
     Route::post('users/{user}/impersonate', [ImpersonateController::class, 'store'])->name('users.impersonate');
 });

@@ -1,6 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
-    BadgeCheck,
     LayoutGrid,
     Lock,
     Mic,
@@ -20,7 +19,6 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { index as agentsIndex } from '@/routes/agents';
 import { index as onboardingIndex } from '@/routes/onboarding';
 import { index as roleplayIndex } from '@/routes/roleplay';
 import { index as roleplayAccessIndex } from '@/routes/roleplay/access';
@@ -58,15 +56,6 @@ export function AppSidebar() {
                       title: 'License Agents Onboarding',
                       href: onboardingIndex(),
                       icon: ShieldCheck,
-                  },
-              ]
-            : []),
-        ...(permissions.includes('agents.view')
-            ? [
-                  {
-                      title: 'Verified agents',
-                      href: agentsIndex(),
-                      icon: BadgeCheck,
                   },
               ]
             : []),

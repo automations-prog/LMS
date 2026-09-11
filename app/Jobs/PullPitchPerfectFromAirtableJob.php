@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\User;
 use App\Notifications\PitchPerfectSyncCompletedNotification;
 use App\Services\AirtableClient;
+use App\Support\PullProgress;
 use Illuminate\Bus\Batch;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -37,9 +38,14 @@ class PullPitchPerfectFromAirtableJob implements ShouldQueue
      *                                  PitchPerfect", or null when the
      *                                  nightly schedule ran this instead of
      *                                  a person.
+     * @param  string|null  $progressId  The id the "Pull PitchPerfect"
+     *                                   dialog is polling for a progress
+     *                                   bar, or null when nothing is
+     *                                   watching (the nightly schedule).
      */
     public function __construct(
         private readonly ?User $triggeredBy = null,
+        private readonly ?string $progressId = null,
     ) {}
 
     /**
@@ -59,6 +65,10 @@ class PullPitchPerfectFromAirtableJob implements ShouldQueue
         $triggeredBy = $this->triggeredBy;
 
         if ($records === []) {
+            if ($this->progressId) {
+                PullProgress::finish($this->progressId);
+            }
+
             self::notifyResult($triggeredBy, $synced, $created);
 
             return;
@@ -69,13 +79,17 @@ class PullPitchPerfectFromAirtableJob implements ShouldQueue
             ->map(fn ($chunk) => new SyncPitchPerfectRecordsBatchJob($chunk->values()->all()))
             ->all();
 
-        Bus::batch($jobs)
+        $batch = Bus::batch($jobs)
             ->name('pitch-perfect-sync')
             ->allowFailures()
             ->finally(function (Batch $batch) use ($triggeredBy, $synced, $created) {
                 self::notifyResult($triggeredBy, $synced, $created);
             })
             ->dispatch();
+
+        if ($this->progressId) {
+            PullProgress::attach($this->progressId, $batch);
+        }
     }
 
     /**

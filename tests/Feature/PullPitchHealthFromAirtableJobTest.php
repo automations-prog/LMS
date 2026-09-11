@@ -20,12 +20,6 @@ beforeEach(function () {
         'services.airtable.token' => 'test-token',
         'services.airtable.pitch_health_base_id' => 'appTest',
         'services.airtable.pitch_health_table_id' => 'tblTest',
-        // Every pull now chains a LinkPitchHealthUsersToXcelJob afterwards
-        // — without this, its Customer API call would fall outside
-        // fakePitchHealthPage's Http::fake pattern and go out for real.
-        'services.customer_api.domain' => 'https://api.customer-test',
-        'services.customer_api.key' => 'test-key',
-        'services.customer_api.location_id' => '123',
     ]);
 });
 
@@ -36,9 +30,6 @@ function fakePitchHealthPage(array $records, ?string $offset = null): void
             'records' => $records,
             'offset' => $offset,
         ], fn ($value, $key) => $key !== 'offset' || $value !== null, ARRAY_FILTER_USE_BOTH)),
-        // No XCEL matches by default — individual tests can override this
-        // pattern if they care about the link job's outcome.
-        'api.customer-test/*' => Http::response(['students' => []]),
     ]);
 }
 
@@ -268,7 +259,7 @@ test('pulling Pitch Health data splits the writes across batch jobs instead of d
         && $batch->jobs->every(fn ($job) => $job instanceof SyncPitchHealthRecordsBatchJob));
 });
 
-test('a pull dispatches a Pitch Health to XCEL link pass afterwards', function () {
+test('a pull no longer chains a Pitch Health to XCEL link pass afterwards', function () {
     Notification::fake();
     Bus::fake();
 
@@ -276,7 +267,10 @@ test('a pull dispatches a Pitch Health to XCEL link pass afterwards', function (
 
     (new PullPitchHealthFromAirtableJob)->handle(app(AirtableClient::class));
 
-    Bus::assertDispatched(LinkPitchHealthUsersToXcelJob::class);
+    // Disabled for now — the nightly schedule (routes/console.php) still
+    // runs the link pass on its own, but a pull no longer triggers it
+    // directly.
+    Bus::assertNotDispatched(LinkPitchHealthUsersToXcelJob::class);
 });
 
 test('a manually triggered pull always confirms the result to whoever clicked, even at zero', function () {

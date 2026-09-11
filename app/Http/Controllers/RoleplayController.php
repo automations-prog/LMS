@@ -20,6 +20,13 @@ class RoleplayController extends Controller
      */
     public function index(Request $request): Response
     {
+        // Front door is closed until launch — everyone sees the same
+        // "Coming Soon" page here regardless of their own roleplay access,
+        // so switching that on ahead of launch doesn't jump the gun.
+        if (! config('roleplay.launched')) {
+            return Inertia::render('roleplay/coming-soon');
+        }
+
         $user = $request->user();
 
         $sessions = $user->roleplaySessions()
@@ -41,6 +48,8 @@ class RoleplayController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        abort_unless(config('roleplay.launched'), 404);
+
         Gate::authorize('create', RoleplaySession::class);
 
         $session = RoleplaySession::create([
