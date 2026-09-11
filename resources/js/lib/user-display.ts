@@ -20,6 +20,7 @@ export const SOURCE_LABELS: Record<string, string> = {
     customer_api: 'Customer API',
     pitch_health: 'Pitch Health',
     pitch_perfect: 'PitchPerfect',
+    self_registered: 'Self-registered',
 };
 
 export function formatSource(source: string | null) {

@@ -2,6 +2,7 @@ import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     Ban,
+    Building2,
     Calendar,
     CircleCheck,
     Clock,
@@ -70,6 +71,7 @@ type TargetUser = {
     must_change_password: boolean;
     excel_id: string | null;
     source: string | null;
+    company_name: string | null;
     metadata: Record<string, unknown> | null;
     last_login_at: string | null;
     two_factor_confirmed_at: string | null;
@@ -372,6 +374,13 @@ export default function UserShow({ targetUser, canEdit }: Props) {
                                 label="Source"
                                 value={formatSource(targetUser.source)}
                             />
+                            {targetUser.company_name && (
+                                <DetailRow
+                                    icon={Building2}
+                                    label="Company"
+                                    value={targetUser.company_name}
+                                />
+                            )}
                             <DetailRow
                                 icon={IdCard}
                                 label="Excel ID"

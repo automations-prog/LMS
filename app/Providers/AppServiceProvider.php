@@ -70,11 +70,20 @@ class AppServiceProvider extends ServiceProvider
      * Excludes impersonation: ImpersonateController binds 'impersonating'
      * into the container around its Auth::login()/loginUsingId() calls,
      * since those also fire this same event but aren't a real login.
+     *
+     * Also excludes inactive accounts — Fortify's registration flow logs a
+     * brand-new (pending-approval, inactive) user in for an instant before
+     * our custom RegisterResponse logs them straight back out, and that
+     * shouldn't read as a real login either.
      */
     protected function configureLoginTracking(): void
     {
         Event::listen(Login::class, function (Login $event): void {
-            if (app()->bound('impersonating') || ! $event->user instanceof User) {
+            if (
+                app()->bound('impersonating')
+                || ! $event->user instanceof User
+                || ! $event->user->is_active
+            ) {
                 return;
             }
 

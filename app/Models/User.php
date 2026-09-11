@@ -28,6 +28,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $excel_id
  * @property array<string, mixed>|null $metadata
  * @property string|null $source
+ * @property string|null $company_name
  * @property Carbon|null $roleplay_enabled_at
  * @property int|null $roleplay_enabled_by
  * @property bool $is_active
@@ -40,7 +41,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'source', 'is_active', 'must_change_password', 'roleplay_enabled_at', 'roleplay_enabled_by'])]
+#[Fillable(['name', 'email', 'password', 'excel_id', 'metadata', 'source', 'company_name', 'is_active', 'must_change_password', 'roleplay_enabled_at', 'roleplay_enabled_by'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -58,6 +59,9 @@ class User extends Authenticatable implements PasskeyUser
     public const SOURCE_PITCH_HEALTH = 'pitch_health';
 
     public const SOURCE_PITCH_PERFECT = 'pitch_perfect';
+
+    /** Signed up themselves via the public registration form. */
+    public const SOURCE_SELF_REGISTERED = 'self_registered';
 
     /**
      * Get the attributes that should be cast.
@@ -154,5 +158,16 @@ class User extends Authenticatable implements PasskeyUser
     public static function onboardingReviewers(): Collection
     {
         return static::permission('onboarding.review')->get();
+    }
+
+    /**
+     * Everyone who can approve a pending self-registration — the audience
+     * for NewAgentRegistrationNotification.
+     *
+     * @return Collection<int, User>
+     */
+    public static function accountApprovers(): Collection
+    {
+        return static::permission('users.update')->get();
     }
 }

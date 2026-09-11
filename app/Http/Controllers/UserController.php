@@ -8,6 +8,7 @@ use App\Jobs\PullAgentsFromCustomerApiJob;
 use App\Jobs\PullPitchHealthFromAirtableJob;
 use App\Jobs\PullPitchPerfectFromAirtableJob;
 use App\Models\User;
+use App\Notifications\AccountApprovedNotification;
 use App\Notifications\AgentInviteNotification;
 use App\Policies\UserPolicy;
 use Illuminate\Http\RedirectResponse;
@@ -177,7 +178,19 @@ class UserController extends Controller
         // a self-suspend guard placed in the policy — enforce it here instead.
         abort_if($request->user()->id === $user->id, 403, __('You cannot change your own status.'));
 
+        // Only a self-registered account's very first activation counts as
+        // an "approval" worth emailing about — not every later
+        // suspend/reactivate toggle, and not accounts that started active
+        // some other way (invited, pulled in from an API).
+        $isFirstApproval = ! $user->is_active
+            && $user->source === User::SOURCE_SELF_REGISTERED
+            && $user->last_login_at === null;
+
         $user->update(['is_active' => ! $user->is_active]);
+
+        if ($isFirstApproval) {
+            $user->notify(new AccountApprovedNotification);
+        }
 
         Inertia::flash('toast', [
             'type' => 'success',

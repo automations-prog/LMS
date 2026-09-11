@@ -14,6 +14,7 @@ import {
     authLabelClass,
     authLinkClass,
 } from '@/lib/brand-theme';
+import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
@@ -108,6 +109,17 @@ export default function Login({ status, canResetPassword }: Props) {
                                 {processing && <Spinner />}
                                 Log in
                             </Button>
+
+                            <p className="text-center text-sm text-muted-foreground">
+                                Don&apos;t have an account?{' '}
+                                <TextLink
+                                    href={register()}
+                                    className={authLinkClass}
+                                    tabIndex={6}
+                                >
+                                    Sign up
+                                </TextLink>
+                            </p>
                         </div>
                     </>
                 )}

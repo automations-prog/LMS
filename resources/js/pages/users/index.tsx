@@ -81,13 +81,14 @@ type UserRow = {
     is_active: boolean;
     last_login_at: string | null;
     source: string | null;
+    company_name: string | null;
     roles: { id: number; name: string }[];
 };
 
 // Filterable in the dropdown below — 'manual' and 'customer_api' are still
 // shown as labels in the table (via SOURCE_LABELS), just not offered as a
 // filter option.
-const ALL_SOURCES = ['pitch_health', 'pitch_perfect'];
+const ALL_SOURCES = ['pitch_health', 'pitch_perfect', 'self_registered'];
 
 type Counts = {
     total: number;
@@ -705,6 +706,9 @@ export default function UsersIndex({
                                     Source
                                 </th>
                                 <th className="px-4 py-3 font-medium">
+                                    Company
+                                </th>
+                                <th className="px-4 py-3 font-medium">
                                     Last login
                                 </th>
                                 <th className="px-4 py-3 font-medium">
@@ -828,6 +832,9 @@ export default function UsersIndex({
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {formatSource(user.source)}
+                                        </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
+                                            {user.company_name ?? '—'}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {formatLastLogin(
@@ -1194,7 +1201,7 @@ export default function UsersIndex({
                             {users.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={8}
+                                        colSpan={9}
                                         className="px-4 py-6 text-center text-muted-foreground"
                                     >
                                         No users found.
